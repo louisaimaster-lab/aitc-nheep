@@ -1,0 +1,178 @@
+[
+  {
+    "id": "claude-3-7-sonnet-hybrid-reasoning",
+    "title": "Claude 3.7 Sonnet & Hybrid Reasoning Architecture",
+    "category": "models",
+    "importance": 9.8,
+    "timestamp": "2026-03-01T12:00:00Z",
+    "status": "trending",
+    "summary": "Anthropic unveiled Claude 3.7 Sonnet featuring dynamic hybrid reasoning, enabling on-the-fly switching between instantaneous response generation and extended multi-step deliberate thinking.",
+    "fullDetails": {
+      "background": "Previous generation models forced users to choose between fast non-thinking models or fixed heavy reasoning chains. Claude 3.7 Sonnet introduces granular thinking budgets.",
+      "keyInnovations": [
+        "Dynamically controllable reasoning token budgets",
+        "State-of-the-art SWE-bench Verified coding performance (>70%)",
+        "Frontier-tier STEM and competitive math problem solving"
+      ],
+      "impact": "Redefines software engineering agents, making complex refactors and reasoning-driven tool calling significantly more robust and cost-effective.",
+      "keyEntities": ["Anthropic", "AWS Bedrock", "Google Cloud Vertex"],
+      "sourceUrl": "https://anthropic.com/news/claude-3-7-sonnet",
+      "supersededBy": null,
+      "pruneReason": null
+    }
+  },
+  {
+    "id": "deepseek-r1-open-weights-distillations",
+    "title": "DeepSeek R1 Open-Weight Reasoning Model",
+    "category": "opensource",
+    "importance": 9.7,
+    "timestamp": "2026-01-20T08:00:00Z",
+    "status": "active",
+    "summary": "DeepSeek launched R1, an open-weight 671B Mixture-of-Experts reasoning model with distilled 1.5B to 70B variants, rivaling proprietary reasoning models via pure reinforcement learning without supervised cold starts.",
+    "fullDetails": {
+      "background": "DeepSeek demonstrated that reasoning behaviors can emerge organically through large-scale rule-based reinforcement learning (RL) rather than human-annotated chains of thought.",
+      "keyInnovations": [
+        "Pure RL post-training (DeepSeek-R1-Zero foundation)",
+        "Distilled Qwen and Llama checkpoints bringing high-tier reasoning to edge hardware",
+        "Multi-head Latent Attention (MLA) and DeepSeekMoE architecture for inference efficiency"
+      ],
+      "impact": "Democratized frontier reasoning models worldwide, accelerating open-source agent development and prompting massive cost reductions across API providers.",
+      "keyEntities": ["DeepSeek AI", "Hugging Face", "Ollama"],
+      "sourceUrl": "https://github.com/deepseek-ai/DeepSeek-R1",
+      "supersededBy": null,
+      "pruneReason": null
+    }
+  },
+  {
+    "id": "gemini-2-0-flash-multimodal-live",
+    "title": "Gemini 2.0 Flash & Real-Time Multimodal Live API",
+    "category": "models",
+    "importance": 9.5,
+    "timestamp": "2026-02-10T15:30:00Z",
+    "status": "trending",
+    "summary": "Google released Gemini 2.0 Flash into general availability, introducing native bidirectional real-time audio and vision streaming with sub-300ms latency and built-in tool use.",
+    "fullDetails": {
+      "background": "Gemini 2.0 was designed for native multimodality from day one, unifying text, visual token streams, audio synthesis, and agentic search grounding into a high-speed inference engine.",
+      "keyInnovations": [
+        "Bidi real-time audio and vision WebSocket streaming",
+        "Integrated Google Search grounding and code execution tools",
+        "1M token context window with high recall precision"
+      ],
+      "impact": "Unlocks next-generation voice assistants and computer-vision paired agents capable of seeing screens or environments in real time with human-level reaction speeds.",
+      "keyEntities": ["Google DeepMind", "Google Cloud", "Google AI Studio"],
+      "sourceUrl": "https://blog.google/technology/ai/gemini-2-0-flash",
+      "supersededBy": null,
+      "pruneReason": null
+    }
+  },
+  {
+    "id": "nvidia-blackwell-b200-datacenter-scaling",
+    "title": "NVIDIA Blackwell B200 Datacenter Deployment",
+    "category": "hardware",
+    "importance": 9.2,
+    "timestamp": "2026-01-15T10:00:00Z",
+    "status": "active",
+    "summary": "NVIDIA initiated volume shipments of the Blackwell GB200 NVL72 rack-scale systems, featuring 208 billion transistors and second-generation Transformer Engine FP4 tensor cores.",
+    "fullDetails": {
+      "background": "Training and serving trillion-parameter MoE architectures demanded a leap in interconnect bandwidth and low-precision floating point arithmetic.",
+      "keyInnovations": [
+        "Fifth-generation NVLink offering 1.8TB/s bidirectional GPU-to-GPU bandwidth",
+        "Microscopic 4-bit floating point (FP4) inference acceleration",
+        "Liquid-cooled 72-GPU unified domain acting as a single giant accelerator"
+      ],
+      "impact": "Reduces inference operational costs and power consumption by up to 25x for multi-trillion token workloads compared to Hopper H100 systems.",
+      "keyEntities": ["NVIDIA", "Microsoft Azure", "AWS", "Google Cloud"],
+      "sourceUrl": "https://nvidianews.nvidia.com/news/nvidia-blackwell-architecture",
+      "supersededBy": null,
+      "pruneReason": null
+    }
+  },
+  {
+    "id": "mcp-model-context-protocol-adoption",
+    "title": "Model Context Protocol (MCP) Standardizes Agent Tooling",
+    "category": "agents",
+    "importance": 9.0,
+    "timestamp": "2026-02-01T14:00:00Z",
+    "status": "active",
+    "summary": "The Model Context Protocol (MCP) has emerged as the universal open standard connecting AI agents to local databases, enterprise tools, IDEs, and browser automation environments.",
+    "fullDetails": {
+      "background": "Before MCP, every agent framework required bespoke integration code for GitHub, PostgreSQL, file systems, and web browsing, causing extreme fragmentation.",
+      "keyInnovations": [
+        "JSON-RPC 2.0 based protocol over stdio and Server-Sent Events (SSE)",
+        "Standardized discovery of Tools, Resources, and Prompts",
+        "Native adoption across modern IDEs, CLI agents, and orchestration engines"
+      ],
+      "impact": "Enables developers to write an integration once and have it work seamlessly across any compliant AI system, catalyzing the agentic software ecosystem.",
+      "keyEntities": ["Anthropic", "Open Source Ecosystem", "Linux Foundation"],
+      "sourceUrl": "https://modelcontextprotocol.io",
+      "supersededBy": null,
+      "pruneReason": null
+    }
+  },
+  {
+    "id": "openai-operator-autonomous-agent",
+    "title": "Autonomous Computer-Using Agents (Operator & Workspaces)",
+    "category": "agents",
+    "importance": 8.9,
+    "timestamp": "2026-01-25T18:00:00Z",
+    "status": "active",
+    "summary": "Frontier labs introduced agentic browser and desktop operators capable of executing multi-step workflows, web navigation, form submission, and complex research without human intervention.",
+    "fullDetails": {
+      "background": "Moving from static text generation to action generation in browser and OS environments requires pixel perception, coordinate clicking, and self-correcting error recovery.",
+      "keyInnovations": [
+        "Vision-action models trained on GUI interaction trajectories",
+        "Autonomous multi-tab navigation and DOM synthesis",
+        "Sandboxed browser execution with user confirmation checkpoints"
+      ],
+      "impact": "Transitions enterprise automation from fragile RPA scripts to resilient natural language operators that can adapt to website UI changes.",
+      "keyEntities": ["OpenAI", "Anthropic", "Google", "Browser Use Community"],
+      "sourceUrl": "https://openai.com/index/introducing-operator",
+      "supersededBy": null,
+      "pruneReason": null
+    }
+  },
+  {
+    "id": "eu-ai-act-prohibitions-in-force",
+    "title": "EU AI Act General Application & High-Risk Framework",
+    "category": "policy",
+    "importance": 8.5,
+    "timestamp": "2026-02-15T09:00:00Z",
+    "status": "active",
+    "summary": "European Union AI Act provisions on prohibited AI practices and transparency obligations for general-purpose AI (GPAI) models officially reached enforcement deadlines.",
+    "fullDetails": {
+      "background": "The EU AI Act is the world's first comprehensive horizontal legal framework for artificial intelligence, classifying systems by risk tier.",
+      "keyInnovations": [
+        "Ban on social scoring, biometric categorization, and manipulative cognitive AI",
+        "Mandatory watermarking and copyright compliance summaries for GPAI",
+        "Systemic risk governance requirements for models trained with >10^25 FLOPs"
+      ],
+      "impact": "Forces global frontier labs to institute rigorous safety audits, documentation disclosures, and red-teaming reports to operate legally within the European single market.",
+      "keyEntities": ["European Parliament", "European AI Office", "Member State Regulators"],
+      "sourceUrl": "https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai",
+      "supersededBy": null,
+      "pruneReason": null
+    }
+  },
+  {
+    "id": "deepseek-v3-moe-architecture",
+    "title": "DeepSeek V3 671B Mixture-of-Experts Release",
+    "category": "opensource",
+    "importance": 8.8,
+    "timestamp": "2025-12-26T12:00:00Z",
+    "status": "superseded",
+    "summary": "DeepSeek released V3 base and chat models, featuring 671B total parameters with 37B active parameters per token, demonstrating near-GPT-4o benchmark performance on an open-source license.",
+    "fullDetails": {
+      "background": "DeepSeek V3 established the architectural bedrock for low-cost MoE training before the introduction of deliberate reasoning models.",
+      "keyInnovations": [
+        "Multi-token prediction (MTP) for improved training signals",
+        "Dual-pipe parallel training pipeline overlapping computation and communication",
+        "Extremely low training compute cost (~$6M in GPU cluster time)"
+      ],
+      "impact": "Proved that top-tier frontier performance could be trained with a fraction of Silicon Valley cluster budgets.",
+      "keyEntities": ["DeepSeek AI"],
+      "sourceUrl": "https://github.com/deepseek-ai/DeepSeek-V3",
+      "supersededBy": "deepseek-r1-open-weights-distillations",
+      "pruneReason": "Superseded by DeepSeek R1, which incorporates the V3 architecture but adds full chain-of-thought reinforcement learning reasoning capabilities."
+    }
+  }
+]

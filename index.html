@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AITC // AI Tracker & Chronicle — aitc.nheep.com</title>
+  <meta name="description" content="Autonomous real-world AI intelligence tracker. Curates breakthrough movements and autonomously prunes outdated items.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Global Top Bar -->
+  <header class="topbar">
+    <div class="topbar-container">
+      <div class="brand">
+        <div class="brand-badge">
+          <span class="pulse-dot"></span>
+          <span class="brand-code">AITC.NHEEP.COM</span>
+        </div>
+        <h1 class="brand-title">AI Tracker &amp; Chronicle</h1>
+        <p class="brand-subtitle">Autonomous real-world AI intelligence feed &amp; auto-pruning engine</p>
+      </div>
+
+      <div class="topbar-actions">
+        <button id="scan-now-btn" class="btn btn-primary">
+          <span class="btn-icon">⚡</span>
+          <span class="btn-label">Run AI Scan</span>
+        </button>
+        <button id="open-ledger-btn" class="btn btn-secondary">
+          <span class="btn-icon">📜</span>
+          <span>Pruned Ledger (<span id="ledger-count-badge">0</span>)</span>
+        </button>
+        <button id="open-settings-btn" class="btn btn-ghost" title="Settings &amp; API Key">
+          <span>⚙️</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Real-time Status & Metrics Banner -->
+  <section class="metrics-bar">
+    <div class="metrics-container">
+      <div class="metric-item">
+        <span class="metric-label">Monitored Items</span>
+        <span id="metric-active-count" class="metric-value">0</span>
+      </div>
+      <div class="metric-divider"></div>
+      <div class="metric-item">
+        <span class="metric-label">Avg Impact Score</span>
+        <span id="metric-avg-score" class="metric-value">0.0</span>
+      </div>
+      <div class="metric-divider"></div>
+      <div class="metric-item">
+        <span class="metric-label">Outdated Pruned</span>
+        <span id="metric-pruned-count" class="metric-value">0</span>
+      </div>
+      <div class="metric-divider"></div>
+      <div class="metric-item">
+        <span class="metric-label">AI Engine Status</span>
+        <span id="metric-engine-status" class="metric-value metric-live">LIVE ACTIVE</span>
+      </div>
+      <div class="metric-divider"></div>
+      <div class="metric-item">
+        <span class="metric-label">Last Evaluation</span>
+        <span id="metric-last-sync" class="metric-value">Just now</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content Layout -->
+  <main class="main-content">
+    <!-- Controls & Filters -->
+    <div class="controls-panel">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" placeholder="Search AI movements, models, chips, agents..." autocomplete="off">
+        <button id="clear-search-btn" class="clear-search-btn hidden">&times;</button>
+      </div>
+
+      <div class="filter-group category-filters" id="category-filters">
+        <button class="filter-chip active" data-category="all">All Movements</button>
+        <button class="filter-chip" data-category="models">🧠 Frontier Models</button>
+        <button class="filter-chip" data-category="opensource">🌐 Open Source</button>
+        <button class="filter-chip" data-category="agents">🤖 AI Agents</button>
+        <button class="filter-chip" data-category="hardware">⚡ Chips &amp; Compute</button>
+        <button class="filter-chip" data-category="research">🔬 Research</button>
+        <button class="filter-chip" data-category="policy">⚖️ Policy &amp; Safety</button>
+      </div>
+
+      <div class="filter-group impact-filters">
+        <label for="impact-select" class="filter-label">Importance:</label>
+        <select id="impact-select" class="select-dropdown">
+          <option value="all">All Qualified (7.0+)</option>
+          <option value="high">High Impact (8.5+)</option>
+          <option value="critical">Critical Breakthroughs (9.5+)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- AI Intelligence Grid ("Boxes") -->
+    <div id="ai-grid" class="ai-grid">
+      <!-- Generated dynamically by app.js -->
+    </div>
+
+    <!-- Empty State -->
+    <div id="empty-state" class="empty-state hidden">
+      <div class="empty-icon">📡</div>
+      <h3>No AI movements match your filters</h3>
+      <p>Try broadening your search query or reset your category selection.</p>
+      <button id="reset-filters-btn" class="btn btn-secondary">Reset Filters</button>
+    </div>
+  </main>
+
+  <!-- Deep Dive Detail Modal (<dialog>) -->
+  <dialog id="detail-dialog" class="aitc-dialog detail-dialog">
+    <div class="dialog-content">
+      <div class="dialog-header">
+        <div class="dialog-badges">
+          <span id="modal-category-badge" class="badge">Category</span>
+          <span id="modal-status-badge" class="badge">Status</span>
+          <span id="modal-impact-badge" class="badge badge-score">★ 0.0</span>
+        </div>
+        <button id="close-detail-dialog-btn" class="dialog-close-btn">&times;</button>
+      </div>
+
+      <h2 id="modal-title" class="dialog-title">Movement Title</h2>
+      <p id="modal-timestamp" class="dialog-meta">Detected: March 1, 2026</p>
+
+      <div class="dialog-body">
+        <section class="detail-section">
+          <h4>Executive Overview</h4>
+          <p id="modal-summary" class="detail-text"></p>
+        </section>
+
+        <section class="detail-section">
+          <h4>Background &amp; Context</h4>
+          <p id="modal-background" class="detail-text"></p>
+        </section>
+
+        <section class="detail-section">
+          <h4>Key Technological Breakthroughs</h4>
+          <ul id="modal-innovations" class="detail-list"></ul>
+        </section>
+
+        <section class="detail-section">
+          <h4>Industry &amp; Real-World Impact</h4>
+          <p id="modal-impact" class="detail-text"></p>
+        </section>
+
+        <section class="detail-section">
+          <h4>Key Entities &amp; Labs</h4>
+          <div id="modal-entities" class="entities-tags"></div>
+        </section>
+
+        <section class="detail-section source-section">
+          <h4>Primary Source</h4>
+          <a id="modal-source-link" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-primary source-link">
+            <span>Read Primary Announcement &rarr;</span>
+          </a>
+        </section>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Pruned / Superseded Ledger Modal (<dialog>) -->
+  <dialog id="ledger-dialog" class="aitc-dialog ledger-dialog">
+    <div class="dialog-content">
+      <div class="dialog-header">
+        <div>
+          <h2 class="dialog-title">AI Prune &amp; Deprecation Ledger</h2>
+          <p class="dialog-subtitle">Items removed from active tracking when superseded by newer breakthroughs or deemed obsolete by the AI model.</p>
+        </div>
+        <button id="close-ledger-dialog-btn" class="dialog-close-btn">&times;</button>
+      </div>
+
+      <div class="dialog-body">
+        <div id="ledger-list" class="ledger-list">
+          <!-- Populated by app.js -->
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Settings & API Modal (<dialog>) -->
+  <dialog id="settings-dialog" class="aitc-dialog settings-dialog">
+    <div class="dialog-content">
+      <div class="dialog-header">
+        <h2 class="dialog-title">AITC Settings &amp; AI Engine Configuration</h2>
+        <button id="close-settings-dialog-btn" class="dialog-close-btn">&times;</button>
+      </div>
+
+      <div class="dialog-body settings-body">
+        <div class="setting-item">
+          <label for="gemini-api-key-input"><strong>Google Gemini API Key</strong></label>
+          <p class="setting-desc">Used for live real-time web grounding and autonomous AI evaluation. Stored securely in your browser's <code>localStorage</code> or configure on Vercel as <code>GEMINI_API_KEY</code>.</p>
+          <input type="password" id="gemini-api-key-input" placeholder="AIzaSy..." class="input-text">
+        </div>
+
+        <div class="setting-item">
+          <label for="sync-frequency-select"><strong>Auto-Evaluation Frequency</strong></label>
+          <p class="setting-desc">How often the engine runs an autonomous evaluation cycle in the background.</p>
+          <select id="sync-frequency-select" class="select-dropdown">
+            <option value="0">Manual Only</option>
+            <option value="300000" selected>Every 5 Minutes</option>
+            <option value="900000">Every 15 Minutes</option>
+            <option value="3600000">Every Hour</option>
+          </select>
+        </div>
+
+        <div class="settings-actions">
+          <button id="save-settings-btn" class="btn btn-primary">Save Settings</button>
+          <button id="restore-seed-btn" class="btn btn-secondary">Restore Baseline Seed Data</button>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Toast Notification Container -->
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- Scripts -->
+  <script src="ai-engine.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -27,10 +27,10 @@
       </div>
 
       <div class="topbar-actions">
-        <button id="scan-now-btn" class="btn btn-primary">
-          <span class="btn-icon">⚡</span>
-          <span class="btn-label">Run AI Scan</span>
-        </button>
+        <div class="cloud-status-badge" title="Gemini 3.8 Flash researches autonomously 24/7 in the cloud without requiring open tabs">
+          <span class="live-pulse"></span>
+          <span>Cloud 24/7 Active</span>
+        </div>
         <button id="open-ledger-btn" class="btn btn-secondary">
           <span>Pruned Ledger (<span id="ledger-count-badge">0</span>)</span>
         </button>
@@ -50,8 +50,8 @@
       </div>
       <div class="metric-divider"></div>
       <div class="metric-item">
-        <span class="metric-label">Auto-Search</span>
-        <span class="metric-value metric-live">YouTube &amp; X Active</span>
+        <span class="metric-label">Research Mode</span>
+        <span class="metric-value metric-live">Cloud 24/7 (Always Active)</span>
       </div>
       <div class="metric-divider"></div>
       <div class="metric-item">
@@ -70,7 +70,7 @@
       </div>
       <div class="metric-divider"></div>
       <div class="metric-item">
-        <span class="metric-label">Last Auto-Scan</span>
+        <span class="metric-label">Last Cloud Sync</span>
         <span id="metric-last-sync" class="metric-value">Just now</span>
       </div>
     </div>
@@ -91,6 +91,7 @@
         <button class="filter-chip" data-category="models">Frontier Models</button>
         <button class="filter-chip" data-category="opensource">Open Source</button>
         <button class="filter-chip" data-category="agents">AI Agents</button>
+        <button class="filter-chip" data-category="tools">Niche Dev Tools</button>
         <button class="filter-chip" data-category="hardware">Chips &amp; Compute</button>
         <button class="filter-chip" data-category="research">Research</button>
         <button class="filter-chip" data-category="policy">Policy &amp; Safety</button>

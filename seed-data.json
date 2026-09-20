@@ -66,6 +66,28 @@
     }
   },
   {
+    "id": "devsplainers-agent-memory-sandboxes",
+    "title": "Hierarchical Graph Memory & Sub-Agent Micro-Sandboxes",
+    "category": "tools",
+    "importance": 9.1,
+    "timestamp": "2026-09-17T18:00:00Z",
+    "status": "trending",
+    "summary": "Featured in Devsplainers' latest technical breakdown: how production engineering teams bypass context-window dumping by pairing isolated tool sandboxes with graph memory (Mem0/Letta), slashing inference token waste by 80%.",
+    "fullDetails": {
+      "background": "Beyond giant frontier model releases, practitioner developer engineering has shifted towards modular agent topologies and sub-agent task isolation as highlighted on YouTube by Devsplainers.",
+      "keyInnovations": [
+        "Dynamic graph memory retrieval over flat sliding-window contexts",
+        "Sub-agent micro-sandboxing preventing terminal command hallucinations",
+        "Pragmatic vibe-coding setups connecting Cursor and Claude Code with local vLLM endpoints"
+      ],
+      "impact": "Shifts developer focus from sheer parameter count to practical, cost-effective engineering architectures that run reliably in production.",
+      "keyEntities": ["Devsplainers", "Mem0", "Letta", "Open-Source AI Community"],
+      "sourceUrl": "https://www.youtube.com/@Devsplainers",
+      "supersededBy": null,
+      "pruneReason": null
+    }
+  },
+  {
     "id": "deepseek-r1-open-weights-distillations",
     "title": "DeepSeek R1 Open-Weight Reasoning Architecture",
     "category": "opensource",

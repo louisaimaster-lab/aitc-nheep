@@ -1,0 +1,10 @@
+name = "aitc-agent"
+main = "index.js"
+compatibility_date = "2024-09-23"
+
+[triggers]
+crons = ["*/10 * * * *"]
+
+[[kv_namespaces]]
+binding = "AITC_STORAGE"
+id = "d03c8d02dd62495cb02c3ebf924e4461"

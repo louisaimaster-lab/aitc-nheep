@@ -8,6 +8,7 @@ const CATEGORIES = {
   models: { label: "Frontier Models", icon: "🧠" },
   opensource: { label: "Open Source", icon: "🌐" },
   agents: { label: "AI Agents", icon: "🤖" },
+  tools: { label: "Niche Dev Tools", icon: "🛠️" },
   hardware: { label: "Compute & Chips", icon: "⚡" },
   research: { label: "Research & Trends", icon: "🔬" },
   policy: { label: "Policy & Safety", icon: "⚖️" }
@@ -224,6 +225,27 @@ async function fetchLiveInternetHeadlines() {
     console.warn('HF papers fetch notice:', e);
   }
 
+  // Source 4: Niche developer channels & tools (Devsplainers, coding agents, local LLMs, vibe coding)
+  try {
+    const devRes = await fetch('https://hn.algolia.com/api/v1/search_by_date?query=devsplainers+OR+"coding+agent"+OR+"local+llm"+OR+"vibe+coding"+OR+mem0+OR+vllm+OR+ollama&tags=story&hitsPerPage=10');
+    if (devRes.ok) {
+      const data = await devRes.json();
+      (data.hits || []).forEach(h => {
+        if (h.title) {
+          headlines.push({
+            source: 'Niche Dev Tool / Architecture',
+            title: h.title,
+            url: h.url || `https://news.ycombinator.com/item?id=${h.objectID}`,
+            publishedAt: h.created_at,
+            score: h.points || 12
+          });
+        }
+      });
+    }
+  } catch (e) {
+    console.warn('Dev tools feed fetch notice:', e);
+  }
+
   return headlines;
 }
 
@@ -236,12 +258,16 @@ async function fetchGeminiAiUpdates(apiKey, currentTitles = [], modelName = 'gem
   }
 
   const liveHeadlines = await fetchLiveInternetHeadlines();
-  const headlineContext = liveHeadlines.slice(0, 8).map(h => `- [${h.source}] ${h.title}`).join('\n');
+  const headlineContext = liveHeadlines.slice(0, 10).map(h => `- [${h.source}] ${h.title}`).join('\n');
 
   const cleanModel = modelName.replace('models/', '').trim() || 'gemini-3.8-flash';
   const prompt = `You are AITC, an autonomous real-world Artificial Intelligence Tracker and Curator.
-Search the LIVE INTERNET right now across X (Twitter), YouTube tech discussions, and frontier AI research.
-Find BREAKING and NEW trends in AI (e.g. newly launched agent frameworks, multimodal reasoning releases, viral demonstrations).
+Search the LIVE INTERNET right now across X (Twitter), YouTube developer channels (specifically including channels like "Devsplainers", Matthew Berman, Fireship, and practical engineering breakdown creators), and niche GitHub repositories.
+IMPORTANT: Do NOT only focus on giant frontier models (GPT/Gemini). Actively discover and surface NICHE developer engineering breakthroughs and practical tooling:
+- Practical AI agent architectures, memory frameworks (e.g. Mem0, Letta), and sub-agent sandboxes.
+- Developer workflow tooling and coding agent showdowns (Cursor, Claude Code, Cline, Aider, OpenHands).
+- Pragmatic local AI inference setups (vLLM, Ollama, quantized MoEs, hardware memory tuning).
+- Viral community demos and vibe-coding toolkits highlighted on Devsplainers and developer forums.
 
 Recent live signals detected from the web:
 ${headlineContext}
@@ -249,24 +275,23 @@ ${headlineContext}
 Currently tracked titles:
 ${JSON.stringify(currentTitles.slice(0, 6))}
 
-Find 1 to 2 FRESH or BREAKING AI developments scoring >= 7.0/10.
+Find 1 to 2 FRESH, BREAKING, or NICHE AI developments scoring >= 7.0/10.
 Output STRICTLY a JSON array matching this format (no markdown fences, just valid JSON):
 [
   {
     "id": "kebab-case-id",
     "title": "Clear headline",
-    "category": "models|opensource|agents|hardware|research|policy",
+    "category": "models|opensource|agents|tools|hardware|research|policy",
     "importance": 8.5,
     "timestamp": "${new Date().toISOString()}",
     "status": "trending",
     "summary": "1-2 sentence overview",
     "fullDetails": {
-      "background": "Context and trend background",
+      "background": "Context and trend background (mentioning channel or developer context if applicable)",
       "keyInnovations": ["trend point 1", "trend point 2"],
       "impact": "Real world / community impact",
-      "keyEntities": ["Entity / Channel / Lab"],
+      "keyEntities": ["Entity / Channel (e.g. Devsplainers) / Lab"],
       "sourceUrl": "https://...",
-      "supersededBy": null,
       "pruneReason": null
     }
   }

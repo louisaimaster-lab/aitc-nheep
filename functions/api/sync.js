@@ -34,10 +34,10 @@ export async function onRequest(context) {
         );
       }
 
-      // Live internet context query
+      // Live internet context query across frontier and niche developer channels
       let liveContext = '';
       try {
-        const hnRes = await fetch('https://hn.algolia.com/api/v1/search_by_date?query=AI+model+OR+LLM+OR+breakthrough&tags=story&hitsPerPage=10');
+        const hnRes = await fetch('https://hn.algolia.com/api/v1/search_by_date?query=devsplainers+OR+"coding+agent"+OR+"local+llm"+OR+"vibe+coding"+OR+mem0+OR+vllm+OR+ollama+OR+AI&tags=story&hitsPerPage=12');
         if (hnRes.ok) {
           const hnData = await hnRes.json();
           liveContext = (hnData.hits || []).map(h => `- ${h.title} (${h.url || 'HN'})`).join('\n');
@@ -47,17 +47,24 @@ export async function onRequest(context) {
       }
 
       const prompt = `You are AITC, an autonomous real-world Artificial Intelligence Tracker and Curator.
-Research the CURRENT INTERNET for the latest movements, frontier model releases (like GPT-6 Astrea, Gemini 3.8, Fable 5.1), chip breakthroughs, and agent architectures.
+Research the CURRENT INTERNET for the latest movements, developer tooling, and niche engineering breakdowns.
+Specifically search YouTube developer channels (including channels like "Devsplainers", Matthew Berman, Fireship, and practical engineering breakdown creators), GitHub open-source repositories, and frontier AI research.
+IMPORTANT: Do NOT only focus on giant frontier models. Actively discover and surface NICHE developer engineering breakthroughs and practical tooling:
+- Practical AI agent architectures, memory frameworks (e.g. Mem0, Letta), and sub-agent sandboxes.
+- Developer workflow tooling and coding agent showdowns (Cursor, Claude Code, Cline, Aider, OpenHands).
+- Pragmatic local AI inference setups (vLLM, Ollama, quantized MoEs, hardware memory tuning).
+- Viral community demos and vibe-coding toolkits highlighted on Devsplainers and developer forums.
+
 Live internet feed signals right now:
 ${liveContext}
 
-Return a JSON array of 1 to 3 FRESH or BREAKING real-world AI events that are decently or highly important (importance >= 7.0).
+Return a JSON array of 1 to 3 FRESH, BREAKING, or NICHE real-world AI events that are decently or highly important (importance >= 7.0).
 Strictly output a JSON array of objects:
 [
   {
     "id": "slug",
     "title": "Title",
-    "category": "models|opensource|agents|hardware|research|policy",
+    "category": "models|opensource|agents|tools|hardware|research|policy",
     "importance": 7.0-10.0,
     "timestamp": "${new Date().toISOString()}",
     "status": "trending",

@@ -73,9 +73,27 @@
     if (aiModelInputEl) aiModelInputEl.value = savedModel;
   }
 
-  // Load Initial Data (from LocalStorage or seed-data.json)
+  // Load Initial Data (from Server Edge KV /api/feed, or LocalStorage / seed-data.json)
   async function loadInitialData() {
     try {
+      // 1. Fetch live authoritative feed from Cloudflare Edge
+      try {
+        const feedRes = await fetch('/api/feed');
+        if (feedRes.ok) {
+          const feedData = await feedRes.json();
+          if (Array.isArray(feedData.activeItems) && feedData.activeItems.length > 0) {
+            activeItems = feedData.activeItems;
+            prunedItems = feedData.prunedItems || [];
+            if (feedData.lastSync) localStorage.setItem('aitc_last_sync', feedData.lastSync);
+            cleanAndSave();
+            return;
+          }
+        }
+      } catch (e) {
+        console.warn('Edge feed fetch notice, reading local storage:', e);
+      }
+
+      // 2. Fallback to seed-data.json / cache
       const response = await fetch('seed-data.json');
       const seedData = await response.json();
       
@@ -96,7 +114,6 @@
           
           prunedItems = cachedPruned ? JSON.parse(cachedPruned) : seedData.filter(i => i.status === 'superseded');
         } catch (e) {
-          console.warn('Cache error, reloading seed data', e);
           activeItems = seedData.filter(i => i.status !== 'superseded');
           prunedItems = seedData.filter(i => i.status === 'superseded');
         }
@@ -105,36 +122,40 @@
         prunedItems = seedData.filter(i => i.status === 'superseded');
       }
 
-      // CRITICAL PURGE: Instantly prune outdated legacy items (e.g. Qwen 2.5 Coder from >1 year ago, 2024 items)
-      activeItems = activeItems.filter(item => {
-        const itemStr = (item.id + ' ' + item.title + ' ' + (item.summary || '')).toLowerCase();
-        const isLegacyObsolete = itemStr.includes('qwen') || itemStr.includes('2024');
-        if (isLegacyObsolete) {
-          prunedItems.unshift({
-            ...item,
-            status: 'superseded',
-            prunedAt: new Date().toISOString(),
-            pruneReason: 'Automatically pruned by AI: Outdated legacy release from over 1 year ago (Qwen 2.5).'
-          });
-          return false;
-        }
-        return true;
-      });
-
-      // Keep active list deduplicated and capped
-      const uniqueMap = new Map();
-      activeItems.forEach(item => {
-        if (!uniqueMap.has(item.id)) uniqueMap.set(item.id, item);
-      });
-      activeItems = Array.from(uniqueMap.values()).slice(0, 6);
-
-      saveState();
-      updateMetrics();
+      cleanAndSave();
     } catch (e) {
-      console.error('Failed to load seed-data.json:', e);
+      console.error('Failed to load initial data:', e);
       activeItems = [];
       prunedItems = [];
     }
+  }
+
+  function cleanAndSave() {
+    // CRITICAL PURGE: Instantly prune outdated legacy items (e.g. Qwen 2.5 Coder from >1 year ago, 2024 items)
+    activeItems = activeItems.filter(item => {
+      const itemStr = (item.id + ' ' + item.title + ' ' + (item.summary || '')).toLowerCase();
+      const isLegacyObsolete = itemStr.includes('qwen') || itemStr.includes('2024');
+      if (isLegacyObsolete) {
+        prunedItems.unshift({
+          ...item,
+          status: 'superseded',
+          prunedAt: new Date().toISOString(),
+          pruneReason: 'Automatically pruned by AI: Outdated legacy release from over 1 year ago (Qwen 2.5).'
+        });
+        return false;
+      }
+      return true;
+    });
+
+    // Keep active list deduplicated and capped at 6
+    const uniqueMap = new Map();
+    activeItems.forEach(item => {
+      if (!uniqueMap.has(item.id)) uniqueMap.set(item.id, item);
+    });
+    activeItems = Array.from(uniqueMap.values()).slice(0, 6);
+
+    saveState();
+    updateMetrics();
   }
 
   function saveState() {
@@ -206,8 +227,10 @@
       render();
     });
 
-    // Scan Now Trigger
-    scanNowBtnEl.addEventListener('click', () => triggerAiScan(true));
+    // Scan Now Trigger (if button is present)
+    if (scanNowBtnEl) {
+      scanNowBtnEl.addEventListener('click', () => triggerAiScan(true));
+    }
 
     // Modals
     openLedgerBtnEl.addEventListener('click', () => {
@@ -266,8 +289,11 @@
 
   // AI Scan and Prune Runner
   async function triggerAiScan(isManual = false) {
-    scanNowBtnEl.disabled = true;
-    scanNowBtnEl.querySelector('.btn-label').innerText = 'Researching Web...';
+    if (scanNowBtnEl) {
+      scanNowBtnEl.disabled = true;
+      const label = scanNowBtnEl.querySelector('.btn-label');
+      if (label) label.innerText = 'Researching Web...';
+    }
 
     try {
       const apiKey = localStorage.getItem('aitc_gemini_api_key');
@@ -316,8 +342,11 @@
       console.error('Scan failed:', err);
       showToast(`Scan Notice: ${err.message}`);
     } finally {
-      scanNowBtnEl.disabled = false;
-      scanNowBtnEl.querySelector('.btn-label').innerText = 'Run AI Scan';
+      if (scanNowBtnEl) {
+        scanNowBtnEl.disabled = false;
+        const label = scanNowBtnEl.querySelector('.btn-label');
+        if (label) label.innerText = 'Run AI Scan';
+      }
     }
   }
 

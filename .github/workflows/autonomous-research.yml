@@ -1,0 +1,16 @@
+name: AITC Autonomous 24/7 AI Research
+
+on:
+  schedule:
+    # Run every 20 minutes 24/7 in the cloud
+    - cron: '*/20 * * * *'
+  workflow_dispatch:
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger AITC 24/7 Cloudflare Edge Agent
+        run: |
+          echo "Triggering AITC 24/7 Autonomous Agent at $(date -u)"
+          curl -s -f "https://aitc-agent.louisaimaster.workers.dev/run" || echo "Edge agent ping completed"

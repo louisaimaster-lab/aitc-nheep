@@ -457,6 +457,42 @@ body {
   font-weight: 700;
 }
 
+.badge-realtime-flash {
+  background: #10b981 !important;
+  color: #ffffff !important;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  animation: pulse 2s infinite;
+}
+
+@keyframes liveArrivalGlow {
+  0% {
+    opacity: 0.3;
+    transform: translateY(-8px);
+    background-color: #ecfdf5 !important;
+  }
+  60% {
+    background-color: #f0fdf4 !important;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ai-box.just-arrived {
+  animation: liveArrivalGlow 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.realtime-ticker {
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+  color: #10b981;
+  font-weight: 600;
+}
+
 .box-title {
   font-size: 1.12rem;
   font-weight: 600;

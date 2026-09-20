@@ -9,6 +9,9 @@
   let currentImpact = 'all';
   let searchQuery = '';
   let autoSyncTimer = null;
+  let liveFeedTimer = null;
+  let liveTickerTimer = null;
+  let backgroundEdgeTriggerTimer = null;
 
   // DOM Elements
   const gridEl = document.getElementById('ai-grid');
@@ -176,10 +179,24 @@
       avgScoreEl.innerText = '0.0';
     }
 
+    updateLiveTimeTicker();
+  }
+
+  // Second-by-second live relative ticker
+  function updateLiveTimeTicker() {
     const lastSyncTime = localStorage.getItem('aitc_last_sync');
-    if (lastSyncTime) {
-      const date = new Date(lastSyncTime);
-      lastSyncEl.innerText = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (!lastSyncTime || !lastSyncEl) return;
+    const diffSec = Math.max(0, Math.floor((Date.now() - new Date(lastSyncTime).getTime()) / 1000));
+    if (diffSec < 4) {
+      lastSyncEl.innerText = 'Just now';
+    } else if (diffSec < 60) {
+      lastSyncEl.innerText = `${diffSec}s ago`;
+    } else if (diffSec < 3600) {
+      const mins = Math.floor(diffSec / 60);
+      lastSyncEl.innerText = `${mins}m ${diffSec % 60}s ago`;
+    } else {
+      const hours = Math.floor(diffSec / 3600);
+      lastSyncEl.innerText = `${hours}h ago`;
     }
   }
 
@@ -276,14 +293,62 @@
     });
   }
 
-  // Setup periodic AI Auto-Sync (constant autonomous background tracking)
+  // Real-Time Live Sync & Edge Dynamic Streaming
   function setupAutoSync() {
     if (autoSyncTimer) clearInterval(autoSyncTimer);
-    const freq = parseInt(localStorage.getItem('aitc_sync_frequency') || '40000', 10);
-    if (freq > 0) {
-      autoSyncTimer = setInterval(() => {
-        triggerAiScan(false);
-      }, freq);
+    if (liveFeedTimer) clearInterval(liveFeedTimer);
+    if (liveTickerTimer) clearInterval(liveTickerTimer);
+    if (backgroundEdgeTriggerTimer) clearInterval(backgroundEdgeTriggerTimer);
+
+    // 1. Second-by-second live relative ticker
+    liveTickerTimer = setInterval(updateLiveTimeTicker, 1000);
+
+    // 2. Real-time fast edge poller: checks for new AI intelligence every 6 seconds
+    liveFeedTimer = setInterval(pollLiveEdgeFeed, 6000);
+
+    // 3. Autonomous background edge research trigger every 45 seconds
+    backgroundEdgeTriggerTimer = setInterval(triggerBackgroundEdgeCycle, 45000);
+  }
+
+  // Poll Cloudflare Edge KV for real-time changes
+  async function pollLiveEdgeFeed() {
+    try {
+      const res = await fetch(`/api/feed?_t=${Date.now()}`, { cache: 'no-store' });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!Array.isArray(data.activeItems) || data.activeItems.length === 0) return;
+
+      const currentIds = new Set(activeItems.map(i => i.id));
+      const newlyArrived = data.activeItems.filter(i => !currentIds.has(i.id));
+      const hasOrderChange = data.activeItems.some((item, idx) => activeItems[idx]?.id !== item.id);
+      const hasPrunedChange = (data.prunedItems?.length || 0) !== prunedItems.length;
+
+      if (newlyArrived.length > 0 || hasOrderChange || hasPrunedChange) {
+        const freshIds = newlyArrived.map(i => i.id);
+        activeItems = data.activeItems;
+        prunedItems = data.prunedItems || [];
+        if (data.lastSync) localStorage.setItem('aitc_last_sync', data.lastSync);
+        cleanAndSave();
+        render(freshIds);
+
+        if (newlyArrived.length > 0) {
+          showToast(`⚡ Real-Time Update: "${newlyArrived[0].title.slice(0, 32)}..." arrived live.`);
+        }
+      } else if (data.lastSync) {
+        localStorage.setItem('aitc_last_sync', data.lastSync);
+        updateMetrics();
+      }
+    } catch (e) {
+      console.warn('Real-time edge feed poll notice:', e);
+    }
+  }
+
+  // Autonomous trigger running in background to keep live stream active
+  async function triggerBackgroundEdgeCycle() {
+    try {
+      await fetch('https://aitc-agent.louisaimaster.workers.dev/run', { cache: 'no-store' });
+    } catch (e) {
+      // Worker cron handles scheduled runs independently
     }
   }
 
@@ -351,7 +416,7 @@
   }
 
   // Filter & Render Grid
-  function render() {
+  function render(highlightIds = []) {
     const filtered = activeItems.filter(item => {
       // Category filter
       if (currentCategory !== 'all' && item.category !== currentCategory) {
@@ -384,26 +449,29 @@
     emptyStateEl.classList.add('hidden');
 
     filtered.forEach((item, index) => {
-      const box = createBoxElement(item, index);
+      const isNew = Array.isArray(highlightIds) && highlightIds.includes(item.id);
+      const box = createBoxElement(item, index, isNew);
       gridEl.appendChild(box);
     });
   }
 
   // Create a single interactive AI Box (card) with shade of white assigned
-  function createBoxElement(item, index = 0) {
+  function createBoxElement(item, index = 0, isNew = false) {
     const box = document.createElement('article');
-    box.className = `ai-box shade-${index % 6}`;
+    box.className = `ai-box shade-${index % 6}${isNew ? ' just-arrived' : ''}`;
     box.tabIndex = 0;
     box.setAttribute('role', 'button');
     box.setAttribute('aria-label', `View details for ${item.title}`);
 
     const catMeta = window.AITCEngine?.CATEGORIES[item.category] || { label: item.category, icon: '⚡' };
     const dateFormatted = formatRelativeTime(item.timestamp);
+    const newBadgeHtml = isNew ? '<span class="badge badge-realtime-flash">⚡ LIVE ARRIVAL</span>' : '';
 
     box.innerHTML = `
       <div>
         <div class="box-header">
           <div class="box-badges">
+            ${newBadgeHtml}
             <span class="badge badge-category">${catMeta.icon} ${catMeta.label}</span>
             <span class="badge badge-status-${item.status}">${item.status.toUpperCase()}</span>
           </div>

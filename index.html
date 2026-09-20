@@ -27,9 +27,9 @@
       </div>
 
       <div class="topbar-actions">
-        <div class="cloud-status-badge" title="Gemini 3.8 Flash researches autonomously 24/7 in the cloud without requiring open tabs">
+        <div class="cloud-status-badge" id="realtime-status-badge" title="Live real-time stream connected to Cloudflare Edge KV">
           <span class="live-pulse"></span>
-          <span>Cloud 24/7 Active</span>
+          <span id="realtime-status-text">Real-Time Stream Active</span>
         </div>
         <button id="open-ledger-btn" class="btn btn-secondary">
           <span>Pruned Ledger (<span id="ledger-count-badge">0</span>)</span>
@@ -50,8 +50,8 @@
       </div>
       <div class="metric-divider"></div>
       <div class="metric-item">
-        <span class="metric-label">Research Mode</span>
-        <span class="metric-value metric-live">Cloud 24/7 (Always Active)</span>
+        <span class="metric-label">Research Stream</span>
+        <span class="metric-value metric-live">⚡ Real-Time Active</span>
       </div>
       <div class="metric-divider"></div>
       <div class="metric-item">
@@ -70,8 +70,8 @@
       </div>
       <div class="metric-divider"></div>
       <div class="metric-item">
-        <span class="metric-label">Last Cloud Sync</span>
-        <span id="metric-last-sync" class="metric-value">Just now</span>
+        <span class="metric-label">Last Edge Sync</span>
+        <span id="metric-last-sync" class="metric-value realtime-ticker">Just now</span>
       </div>
     </div>
   </section>

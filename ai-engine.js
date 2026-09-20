@@ -228,9 +228,9 @@ async function fetchLiveInternetHeadlines() {
 }
 
 /**
- * Fetch updates using Gemini with Google Search Grounding researching YouTube, X, and Web
+ * Fetch updates using Gemini 3.8 Flash with Google Search Grounding researching YouTube, X, and Web
  */
-async function fetchGeminiAiUpdates(apiKey, currentTitles = [], modelName = 'gemini-2.5-flash') {
+async function fetchGeminiAiUpdates(apiKey, currentTitles = [], modelName = 'gemini-3.8-flash') {
   if (!apiKey) {
     throw new Error("Gemini API key required for live web-grounded AI synthesis.");
   }
@@ -238,7 +238,7 @@ async function fetchGeminiAiUpdates(apiKey, currentTitles = [], modelName = 'gem
   const liveHeadlines = await fetchLiveInternetHeadlines();
   const headlineContext = liveHeadlines.slice(0, 8).map(h => `- [${h.source}] ${h.title}`).join('\n');
 
-  const cleanModel = modelName.replace('models/', '').trim() || 'gemini-2.5-flash';
+  const cleanModel = modelName.replace('models/', '').trim() || 'gemini-3.8-flash';
   const prompt = `You are AITC, an autonomous real-world Artificial Intelligence Tracker and Curator.
 Search the LIVE INTERNET right now across X (Twitter), YouTube tech discussions, and frontier AI research.
 Find BREAKING and NEW trends in AI (e.g. newly launched agent frameworks, multimodal reasoning releases, viral demonstrations).

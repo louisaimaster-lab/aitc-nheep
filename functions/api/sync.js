@@ -25,7 +25,7 @@ export async function onRequest(context) {
     try {
       const body = await request.json().catch(() => ({}));
       const activeKey = apiKey || body.clientKey;
-      const modelName = body.modelName || 'gemini-2.5-flash';
+      const modelName = body.modelName || 'gemini-3.8-flash';
 
       if (!activeKey) {
         return new Response(

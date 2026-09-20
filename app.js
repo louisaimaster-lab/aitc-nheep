@@ -62,7 +62,12 @@
   function loadSettings() {
     const savedKey = localStorage.getItem('aitc_gemini_api_key') || '';
     const savedFreq = localStorage.getItem('aitc_sync_frequency') || '40000';
-    const savedModel = localStorage.getItem('aitc_ai_model') || 'gemini-2.5-flash';
+    let savedModel = localStorage.getItem('aitc_ai_model');
+    // Automatically upgrade legacy or empty models to Gemini 3.8 Flash
+    if (!savedModel || savedModel === 'gemini-2.5-flash') {
+      savedModel = 'gemini-3.8-flash';
+      localStorage.setItem('aitc_ai_model', savedModel);
+    }
     if (apiKeyInputEl) apiKeyInputEl.value = savedKey;
     if (syncFrequencySelectEl) syncFrequencySelectEl.value = savedFreq;
     if (aiModelInputEl) aiModelInputEl.value = savedModel;
@@ -80,7 +85,6 @@
       if (cachedActive) {
         try {
           const parsed = JSON.parse(cachedActive);
-          // Check if seed has newer models (e.g. gpt-6-astrea or gemini-3-8) not in cache
           const cachedIds = new Set(parsed.map(p => p.id));
           const missingSeed = seedData.filter(s => s.status !== 'superseded' && !cachedIds.has(s.id));
           
@@ -91,16 +95,39 @@
           }
           
           prunedItems = cachedPruned ? JSON.parse(cachedPruned) : seedData.filter(i => i.status === 'superseded');
-          saveState();
-          updateMetrics();
-          return;
         } catch (e) {
           console.warn('Cache error, reloading seed data', e);
+          activeItems = seedData.filter(i => i.status !== 'superseded');
+          prunedItems = seedData.filter(i => i.status === 'superseded');
         }
+      } else {
+        activeItems = seedData.filter(i => i.status !== 'superseded');
+        prunedItems = seedData.filter(i => i.status === 'superseded');
       }
 
-      activeItems = seedData.filter(i => i.status !== 'superseded');
-      prunedItems = seedData.filter(i => i.status === 'superseded');
+      // CRITICAL PURGE: Instantly prune outdated legacy items (e.g. Qwen 2.5 Coder from >1 year ago, 2024 items)
+      activeItems = activeItems.filter(item => {
+        const itemStr = (item.id + ' ' + item.title + ' ' + (item.summary || '')).toLowerCase();
+        const isLegacyObsolete = itemStr.includes('qwen') || itemStr.includes('2024');
+        if (isLegacyObsolete) {
+          prunedItems.unshift({
+            ...item,
+            status: 'superseded',
+            prunedAt: new Date().toISOString(),
+            pruneReason: 'Automatically pruned by AI: Outdated legacy release from over 1 year ago (Qwen 2.5).'
+          });
+          return false;
+        }
+        return true;
+      });
+
+      // Keep active list deduplicated and capped
+      const uniqueMap = new Map();
+      activeItems.forEach(item => {
+        if (!uniqueMap.has(item.id)) uniqueMap.set(item.id, item);
+      });
+      activeItems = Array.from(uniqueMap.values()).slice(0, 6);
+
       saveState();
       updateMetrics();
     } catch (e) {
@@ -197,7 +224,7 @@
     saveSettingsBtnEl.addEventListener('click', () => {
       const key = apiKeyInputEl.value.trim();
       const freq = syncFrequencySelectEl.value;
-      const model = (aiModelInputEl ? aiModelInputEl.value.trim() : '') || 'gemini-2.5-flash';
+      const model = (aiModelInputEl ? aiModelInputEl.value.trim() : '') || 'gemini-3.8-flash';
       localStorage.setItem('aitc_gemini_api_key', key);
       localStorage.setItem('aitc_sync_frequency', freq);
       localStorage.setItem('aitc_ai_model', model);
@@ -244,7 +271,7 @@
 
     try {
       const apiKey = localStorage.getItem('aitc_gemini_api_key');
-      const modelName = localStorage.getItem('aitc_ai_model') || 'gemini-2.5-flash';
+      const modelName = localStorage.getItem('aitc_ai_model') || 'gemini-3.8-flash';
       let candidates = [];
 
       if (apiKey && window.AITCEngine) {

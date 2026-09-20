@@ -4,12 +4,16 @@
 const assert = require('assert');
 const {
   IMPORTANCE_THRESHOLD,
+  CATEGORIES,
   isImportantEnough,
   checkSuperseded,
   runAiLifecycleCycle
 } = require('../ai-engine.js');
 
 console.log('Running AITC Engine verification tests...\n');
+
+assert(CATEGORIES.unconventional, 'CATEGORIES.unconventional must be defined');
+assert.strictEqual(CATEGORIES.unconventional.icon, '🧬');
 
 // Test 1: Importance Threshold filter
 const lowImportanceItem = {

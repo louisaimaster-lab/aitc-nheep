@@ -9,6 +9,7 @@ const CATEGORIES = {
   opensource: { label: "Open Source", icon: "🌐" },
   agents: { label: "AI Agents", icon: "🤖" },
   tools: { label: "Niche Dev Tools", icon: "🛠️" },
+  unconventional: { label: "Unconventional & Exotic AI", icon: "🧬" },
   hardware: { label: "Compute & Chips", icon: "⚡" },
   research: { label: "Research & Trends", icon: "🔬" },
   policy: { label: "Policy & Safety", icon: "⚖️" }
@@ -246,6 +247,27 @@ async function fetchLiveInternetHeadlines() {
     console.warn('Dev tools feed fetch notice:', e);
   }
 
+  // Source 5: Unconventional & Exotic AI paradigms (Neuromorphic, Photonic, Organoid wetware, Neuro-Symbolic)
+  try {
+    const exoticRes = await fetch('https://hn.algolia.com/api/v1/search_by_date?query=neuromorphic+OR+photonic+OR+"optical+computing"+OR+wetware+OR+organoid+OR+"neuro-symbolic"+OR+"Lean+4"+OR+"spiking+neural"&tags=story&hitsPerPage=10');
+    if (exoticRes.ok) {
+      const data = await exoticRes.json();
+      (data.hits || []).forEach(h => {
+        if (h.title) {
+          headlines.push({
+            source: 'Unconventional AI Paradigm',
+            title: h.title,
+            url: h.url || `https://news.ycombinator.com/item?id=${h.objectID}`,
+            publishedAt: h.created_at,
+            score: (h.points || 8) + 4
+          });
+        }
+      });
+    }
+  } catch (e) {
+    console.warn('Unconventional AI feed fetch notice:', e);
+  }
+
   return headlines;
 }
 
@@ -263,11 +285,14 @@ async function fetchGeminiAiUpdates(apiKey, currentTitles = [], modelName = 'gem
   const cleanModel = modelName.replace('models/', '').trim() || 'gemini-3.8-flash';
   const prompt = `You are AITC, an autonomous real-world Artificial Intelligence Tracker and Curator.
 Search the LIVE INTERNET right now across X (Twitter), YouTube developer channels (specifically including channels like "Devsplainers", Matthew Berman, Fireship, and practical engineering breakdown creators), and niche GitHub repositories.
-IMPORTANT: Do NOT only focus on giant frontier models (GPT/Gemini). Actively discover and surface NICHE developer engineering breakthroughs and practical tooling:
-- Practical AI agent architectures, memory frameworks (e.g. Mem0, Letta), and sub-agent sandboxes.
-- Developer workflow tooling and coding agent showdowns (Cursor, Claude Code, Cline, Aider, OpenHands).
-- Pragmatic local AI inference setups (vLLM, Ollama, quantized MoEs, hardware memory tuning).
-- Viral community demos and vibe-coding toolkits highlighted on Devsplainers and developer forums.
+IMPORTANT: Do NOT only focus on giant frontier models (GPT/Gemini). Actively discover and surface NICHE developer engineering breakthroughs and UNCONVENTIONAL / EXOTIC AI paradigms:
+- Niche developer engineering: Practical AI agent architectures, memory frameworks (Mem0, Letta), sub-agent sandboxes, local LLMs (vLLM, Ollama), vibe-coding tools.
+- Unconventional & Exotic AI paradigms:
+  * Photonic & Optical Computing (light-speed analog matrix multiplication, photonic interconnects, Lightmatter/Celestial).
+  * Biological Neural Wetware & Organoid Computing (living cortical neuron cultures on microelectrodes, Cortical Labs DishBrain, biocomputing).
+  * Spiking Neuromorphic Silicon (Intel Loihi, SynSense, asynchronous event-driven dynamic vision sensors).
+  * Neuro-Symbolic & Formal Verification (Lean 4, Isabelle theorem provers, SAT/SMT mathematical guarantees without hallucination).
+  * Hyperdimensional Computing (VSA - Vector Symbolic Architectures) & Evolutionary AI (Sakana AI model merging).
 
 Recent live signals detected from the web:
 ${headlineContext}
@@ -275,13 +300,13 @@ ${headlineContext}
 Currently tracked titles:
 ${JSON.stringify(currentTitles.slice(0, 6))}
 
-Find 1 to 2 FRESH, BREAKING, or NICHE AI developments scoring >= 7.0/10.
+Find 1 to 2 FRESH, BREAKING, or UNCONVENTIONAL AI developments scoring >= 7.0/10.
 Output STRICTLY a JSON array matching this format (no markdown fences, just valid JSON):
 [
   {
     "id": "kebab-case-id",
     "title": "Clear headline",
-    "category": "models|opensource|agents|tools|hardware|research|policy",
+    "category": "models|opensource|agents|tools|unconventional|hardware|research|policy",
     "importance": 8.5,
     "timestamp": "${new Date().toISOString()}",
     "status": "trending",
@@ -357,12 +382,16 @@ async function fetchPublicLiveFeed(existingIds = []) {
   const candidates = [];
   for (const h of pool.slice(0, 2)) {
     const slug = h.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 45);
+    const isUnconventional = /neuromorphic|spiking|snn|photonic|optical computing|wetware|organoid|neuro-symbolic|symbolic logic|lean 4|hyperdimensional|vector symbolic|vsa|biocomputing|cellular automata/i.test(h.title);
+    const isTool = /devsplainers|tool|coding agent|cursor|aider|cline|vllm|ollama|mem0|letta|vibe coding|sandbox|docker|micro-sandbox/i.test(h.title);
     const isModel = /model|llm|gpt|gemini|deepseek|claude|reasoning|weights/i.test(h.title);
     const isAgent = /agent|autonomous|operator|action/i.test(h.title);
     const isHardware = /chip|gpu|lpu|tpu|compute|hardware/i.test(h.title);
 
     let category = 'research';
-    if (isModel) category = 'models';
+    if (isUnconventional) category = 'unconventional';
+    else if (isTool) category = 'tools';
+    else if (isModel) category = 'models';
     else if (isAgent) category = 'agents';
     else if (isHardware) category = 'hardware';
 

@@ -7,6 +7,46 @@ const IMPORTANCE_THRESHOLD = 7.0;
 
 const SEED_BASELINE = [
   {
+    id: "photonic-optical-computing-gemms",
+    title: "Photonic Optical Accelerators & Light-Speed Matrix Multiplication",
+    category: "unconventional",
+    importance: 9.6,
+    timestamp: "2026-09-19T14:00:00Z",
+    status: "trending",
+    summary: "Pioneered by optical computing labs (Lightmatter Passage & Celestial AI): replacing silicon copper interconnects with photonic waveguides, executing matrix tensor multiplications at light speed with near-zero heat dissipation.",
+    fullDetails: {
+      background: "Standard transformer training is hitting the thermodynamic power wall; optical computing computes linear algebra passively via photon interference rather than charging capacitive silicon transistors.",
+      keyInnovations: [
+        "Passive Mach-Zehnder optical interferometers computing analog GEMMs with sub-picosecond latency",
+        "Electro-optical co-packaged silicon photonics overcoming copper bandwidth bottlenecks",
+        "Over 100x improvement in energy efficiency per floating point tensor operation"
+      ],
+      impact: "Decouples frontier neural computation from power grid constraints and massive water-cooling plants.",
+      keyEntities: ["Lightmatter", "Celestial AI", "MIT Photonic Labs"],
+      sourceUrl: "https://lightmatter.co"
+    }
+  },
+  {
+    id: "biological-organoid-wetware-intelligence",
+    title: "Biological Neural Wetware & Cortical Organoid Computing",
+    category: "unconventional",
+    importance: 9.3,
+    timestamp: "2026-09-18T16:00:00Z",
+    status: "trending",
+    summary: "Biological AI processors (such as Cortical Labs' DishBrain / CL1 systems) interface living human neuron cultures onto high-density CMOS microelectrode arrays to execute live reinforcement learning at under 20 milliwatts.",
+    fullDetails: {
+      background: "Biological brains achieve generalized intelligence and continuous adaptation using ~20 watts; wetware computing harnesses living cellular networks directly as computational substrates.",
+      keyInnovations: [
+        "Real-time closed-loop electrophysiological stimulation through high-density microelectrodes",
+        "Free Energy Principle (synthetic biological reinforcement learning without backpropagation)",
+        "Sub-milliwatt power profile outperforming digital simulation for continuous adaptive control"
+      ],
+      impact: "Opens the door to hybrid bio-silicon processors capable of lifelong continuous learning without catastrophic forgetting.",
+      keyEntities: ["Cortical Labs", "Johns Hopkins Biocomputing", "Nature Electronics"],
+      sourceUrl: "https://corticallabs.com"
+    }
+  },
+  {
     id: "gpt-6-astrea-cognitive-systems",
     title: "GPT-6 Astrea & Autonomous Digital-Physical Cognitive Systems",
     category: "models",
@@ -84,6 +124,46 @@ const SEED_BASELINE = [
       impact: "Shifts developer focus from sheer parameter count to practical, cost-effective engineering architectures that run reliably in production.",
       keyEntities: ["Devsplainers", "Mem0", "Letta", "Open-Source AI Community"],
       sourceUrl: "https://www.youtube.com/@Devsplainers"
+    }
+  },
+  {
+    id: "neuromorphic-spiking-event-vision",
+    title: "Asynchronous Spiking Neuromorphic Chips & Event-Based Vision",
+    category: "unconventional",
+    importance: 9.2,
+    timestamp: "2026-09-17T12:00:00Z",
+    status: "trending",
+    summary: "Neuromorphic systems (Intel Loihi 2, SynSense, and Prophesee event cameras) abandon synchronous clocks, processing data only when spikes fire, slashing edge compute power by 99% for robotics and edge autonomy.",
+    fullDetails: {
+      background: "Traditional neural networks compute on every clock cycle even when frames don't change; neuromorphic architectures emulate biological spikes, only activating on dynamic state changes.",
+      keyInnovations: [
+        "Event-driven sparse asynchronous spike message passing",
+        "Dynamic Vision Sensors (DVS) with microsecond temporal resolution and zero motion blur",
+        "On-chip local plasticity rules (STDP - Spike-Timing-Dependent Plasticity) for real-time edge adaptation"
+      ],
+      impact: "Enables perpetual battery or solar-powered AI perception in robotics, satellites, and medical implants.",
+      keyEntities: ["Intel Labs", "SynSense", "Prophesee", "ETH Zurich"],
+      sourceUrl: "https://www.intel.com/content/www/us/en/research/neuromorphic-computing.html"
+    }
+  },
+  {
+    id: "neuro-symbolic-formal-verification",
+    title: "Neuro-Symbolic Integration & Formally Verified Mathematical Proofs",
+    category: "unconventional",
+    importance: 9.5,
+    timestamp: "2026-09-16T10:00:00Z",
+    status: "trending",
+    summary: "Bypassing probabilistic LLM hallucinations: pairing neural intuition with deterministic symbolic theorem provers (Lean 4, Isabelle, and Z3 SMT solvers) to produce 100% mathematically verified code and proofs.",
+    fullDetails: {
+      background: "Pure neural models hallucinate because they predict probable tokens rather than verified truths; neuro-symbolic systems use the neural net for creative search and symbolic kernels for strict validation.",
+      keyInnovations: [
+        "Formal verification engines where proofs are compiled and type-checked before acceptance",
+        "Tree search guided by neural policy networks over formal mathematical tactic libraries",
+        "Zero probability of hallucination for critical software contracts and aerospace verification"
+      ],
+      impact: "Critical foundation for safety-critical aviation, cryptography, smart contracts, and solving open mathematical conjectures.",
+      keyEntities: ["Lean 4 Community", "DeepMind AlphaProof", "Carnegie Mellon"],
+      sourceUrl: "https://lean-lang.org"
     }
   },
   {
@@ -272,13 +352,15 @@ async function runAutonomousResearchCycle(env) {
   const candidates = [];
   for (const h of pool.slice(0, 2)) {
     const slug = h.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 45);
+    const isUnconventional = /neuromorphic|spiking|snn|photonic|optical computing|wetware|organoid|neuro-symbolic|symbolic logic|lean 4|hyperdimensional|vector symbolic|vsa|biocomputing|cellular automata/i.test(h.title);
     const isTool = /devsplainers|tool|coding agent|cursor|aider|cline|vllm|ollama|mem0|letta|vibe coding|sandbox|docker|micro-sandbox/i.test(h.title);
     const isModel = /model|llm|gpt|gemini|deepseek|claude|reasoning|weights/i.test(h.title);
     const isAgent = /agent|autonomous|operator|action/i.test(h.title);
     const isHardware = /chip|gpu|lpu|tpu|compute|hardware/i.test(h.title);
 
     let category = "research";
-    if (isTool) category = "tools";
+    if (isUnconventional) category = "unconventional";
+    else if (isTool) category = "tools";
     else if (isModel) category = "models";
     else if (isAgent) category = "agents";
     else if (isHardware) category = "hardware";
@@ -406,6 +488,27 @@ async function fetchLiveSignals() {
     }
   } catch (e) {
     console.warn("Feed niche notice:", e);
+  }
+
+  // Unconventional & Exotic AI feeds: Neuromorphic, Photonic, Organoid wetware, Neuro-Symbolic
+  try {
+    const res = await fetch("https://hn.algolia.com/api/v1/search_by_date?query=neuromorphic+OR+photonic+OR+%22optical+computing%22+OR+wetware+OR+organoid+OR+%22neuro-symbolic%22+OR+%22Lean+4%22+OR+%22spiking+neural%22&tags=story&hitsPerPage=10");
+    if (res.ok) {
+      const data = await res.json();
+      (data.hits || []).forEach(h => {
+        if (h.title) {
+          headlines.push({
+            source: "Unconventional AI Paradigm",
+            title: h.title,
+            url: h.url || `https://news.ycombinator.com/item?id=${h.objectID}`,
+            publishedAt: h.created_at,
+            score: (h.points || 6) + 4
+          });
+        }
+      });
+    }
+  } catch (e) {
+    console.warn("Feed unconventional notice:", e);
   }
 
   // Frontier feeds: Models and agent systems

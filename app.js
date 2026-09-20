@@ -53,7 +53,9 @@
     await loadInitialData();
     setupEventListeners();
     setupAutoSync();
-    render();
+    if (!document.getElementById('datastar-stream')) {
+      render();
+    }
 
     // Automatically trigger real-time internet search on startup
     setTimeout(() => {
@@ -206,14 +208,14 @@
     searchInputEl.addEventListener('input', (e) => {
       searchQuery = e.target.value.toLowerCase().trim();
       clearSearchBtnEl.classList.toggle('hidden', searchQuery.length === 0);
-      render();
+      if (!document.getElementById('datastar-stream')) render();
     });
 
     clearSearchBtnEl.addEventListener('click', () => {
       searchInputEl.value = '';
       searchQuery = '';
       clearSearchBtnEl.classList.add('hidden');
-      render();
+      if (!document.getElementById('datastar-stream')) render();
     });
 
     // Category Filter Chips
@@ -223,13 +225,13 @@
       categoryFiltersEl.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
       currentCategory = chip.dataset.category;
-      render();
+      if (!document.getElementById('datastar-stream')) render();
     });
 
     // Impact Filter Dropdown
     impactSelectEl.addEventListener('change', (e) => {
       currentImpact = e.target.value;
-      render();
+      if (!document.getElementById('datastar-stream')) render();
     });
 
     resetFiltersBtnEl.addEventListener('click', () => {
@@ -241,7 +243,7 @@
       categoryFiltersEl.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
       categoryFiltersEl.querySelector('[data-category="all"]').classList.add('active');
       impactSelectEl.value = 'all';
-      render();
+      if (!document.getElementById('datastar-stream')) render();
     });
 
     // Scan Now Trigger (if button is present)
@@ -259,6 +261,38 @@
     openSettingsBtnEl.addEventListener('click', () => settingsDialogEl.showModal());
     closeSettingsBtnEl.addEventListener('click', () => settingsDialogEl.close());
     closeDetailBtnEl.addEventListener('click', () => detailDialogEl.close());
+
+    // Delegated click and keyboard handlers on ai-grid (supports Datastar SSE morphed cards)
+    gridEl.addEventListener('click', (e) => {
+      const box = e.target.closest('.ai-box');
+      if (!box) return;
+      const rawItem = box.getAttribute('data-item');
+      if (rawItem) {
+        try {
+          const item = JSON.parse(decodeURIComponent(rawItem));
+          openDetailDialog(item);
+        } catch (err) {
+          console.error('Failed to parse item data for dialog:', err);
+        }
+      }
+    });
+
+    gridEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        const box = e.target.closest('.ai-box');
+        if (!box) return;
+        e.preventDefault();
+        const rawItem = box.getAttribute('data-item');
+        if (rawItem) {
+          try {
+            const item = JSON.parse(decodeURIComponent(rawItem));
+            openDetailDialog(item);
+          } catch (err) {
+            console.error('Failed to parse item data for dialog:', err);
+          }
+        }
+      }
+    });
 
     // Save Settings
     saveSettingsBtnEl.addEventListener('click', () => {
@@ -329,7 +363,9 @@
         prunedItems = data.prunedItems || [];
         if (data.lastSync) localStorage.setItem('aitc_last_sync', data.lastSync);
         cleanAndSave();
-        render(freshIds);
+        if (!document.getElementById('datastar-stream')) {
+          render(freshIds);
+        }
 
         if (newlyArrived.length > 0) {
           showToast(`⚡ Real-Time Update: "${newlyArrived[0].title.slice(0, 32)}..." arrived live.`);

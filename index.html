@@ -6,8 +6,10 @@
   <title>AITC // aitc.nheep.com</title>
   <meta name="description" content="Minimal, real-world AI intelligence tracker. Curates breakthrough movements and autonomously prunes outdated items.">
   <link rel="stylesheet" href="style.css">
+  <!-- Datastar: Real-time hypermedia successor to HTMX, native SSE & reactive signals -->
+  <script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.3/bundles/datastar.js"></script>
 </head>
-<body>
+<body data-signals="{ cat: 'all', q: '' }">
   <!-- Header -->
   <header class="topbar">
     <div class="topbar-container">
@@ -27,9 +29,9 @@
       </div>
 
       <div class="topbar-actions">
-        <div class="cloud-status-badge" id="realtime-status-badge" title="Live real-time stream connected to Cloudflare Edge KV">
+        <div class="cloud-status-badge" id="realtime-status-badge" title="Live real-time stream connected to Cloudflare Edge KV via Datastar SSE">
           <span class="live-pulse"></span>
-          <span id="realtime-status-text">Real-Time Stream Active</span>
+          <span id="realtime-status-text">Datastar SSE Active</span>
         </div>
         <button id="open-ledger-btn" class="btn btn-secondary">
           <span>Pruned Ledger (<span id="ledger-count-badge">0</span>)</span>
@@ -51,7 +53,7 @@
       <div class="metric-divider"></div>
       <div class="metric-item">
         <span class="metric-label">Research Stream</span>
-        <span class="metric-value metric-live">⚡ Real-Time Active</span>
+        <span class="metric-value metric-live">⚡ Datastar Real-Time SSE</span>
       </div>
       <div class="metric-divider"></div>
       <div class="metric-item">
@@ -82,20 +84,22 @@
     <div class="controls-panel">
       <div class="search-box">
         <span class="search-icon">🔍</span>
-        <input type="text" id="search-input" placeholder="Search AI movements, models, chips, agents..." autocomplete="off">
+        <input type="text" id="search-input" placeholder="Search AI movements, models, chips, agents..." autocomplete="off"
+               data-bind="q"
+               data-on:input__debounce.250ms="@get('/api/feed-sse?cat=' + $cat + '&q=' + $q)">
         <button id="clear-search-btn" class="clear-search-btn hidden">&times;</button>
       </div>
 
       <div class="filter-group category-filters" id="category-filters">
-        <button class="filter-chip active" data-category="all">All Movements</button>
-        <button class="filter-chip" data-category="models">Frontier Models</button>
-        <button class="filter-chip" data-category="opensource">Open Source</button>
-        <button class="filter-chip" data-category="agents">AI Agents</button>
-        <button class="filter-chip" data-category="tools">Niche Dev Tools</button>
-        <button class="filter-chip" data-category="unconventional">Exotic &amp; Unconventional AI</button>
-        <button class="filter-chip" data-category="hardware">Chips &amp; Compute</button>
-        <button class="filter-chip" data-category="research">Research</button>
-        <button class="filter-chip" data-category="policy">Policy &amp; Safety</button>
+        <button class="filter-chip active" data-category="all" data-on:click="$cat = 'all'; @get('/api/feed-sse?cat=' + $cat + '&q=' + $q)">All Movements</button>
+        <button class="filter-chip" data-category="models" data-on:click="$cat = 'models'; @get('/api/feed-sse?cat=' + $cat + '&q=' + $q)">Frontier Models</button>
+        <button class="filter-chip" data-category="opensource" data-on:click="$cat = 'opensource'; @get('/api/feed-sse?cat=' + $cat + '&q=' + $q)">Open Source</button>
+        <button class="filter-chip" data-category="agents" data-on:click="$cat = 'agents'; @get('/api/feed-sse?cat=' + $cat + '&q=' + $q)">AI Agents</button>
+        <button class="filter-chip" data-category="tools" data-on:click="$cat = 'tools'; @get('/api/feed-sse?cat=' + $cat + '&q=' + $q)">Niche Dev Tools</button>
+        <button class="filter-chip" data-category="unconventional" data-on:click="$cat = 'unconventional'; @get('/api/feed-sse?cat=' + $cat + '&q=' + $q)">Exotic &amp; Unconventional AI</button>
+        <button class="filter-chip" data-category="hardware" data-on:click="$cat = 'hardware'; @get('/api/feed-sse?cat=' + $cat + '&q=' + $q)">Chips &amp; Compute</button>
+        <button class="filter-chip" data-category="research" data-on:click="$cat = 'research'; @get('/api/feed-sse?cat=' + $cat + '&q=' + $q)">Research</button>
+        <button class="filter-chip" data-category="policy" data-on:click="$cat = 'policy'; @get('/api/feed-sse?cat=' + $cat + '&q=' + $q)">Policy &amp; Safety</button>
       </div>
 
       <div class="filter-group impact-filters">
@@ -108,9 +112,12 @@
       </div>
     </div>
 
-    <!-- AI Intelligence Grid ("Boxes") -->
+    <!-- Datastar Poller & Initializer: Streams real-time SSE DOM patches -->
+    <div id="datastar-stream" data-init="@get('/api/feed-sse?cat=' + $cat + '&q=' + $q)" data-on-interval__duration.6s="@get('/api/feed-sse?cat=' + $cat + '&q=' + $q)"></div>
+
+    <!-- AI Intelligence Grid ("Boxes") morphed in real time via Datastar SSE -->
     <div id="ai-grid" class="ai-grid">
-      <!-- Generated dynamically by app.js -->
+      <!-- Morphed dynamically by Datastar SSE -->
     </div>
 
     <!-- Empty State -->

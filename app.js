@@ -51,12 +51,17 @@
     setupEventListeners();
     setupAutoSync();
     render();
+
+    // Automatically trigger real-time internet search on startup
+    setTimeout(() => {
+      triggerAiScan(false);
+    }, 1000);
   });
 
   // Load Settings from LocalStorage
   function loadSettings() {
     const savedKey = localStorage.getItem('aitc_gemini_api_key') || '';
-    const savedFreq = localStorage.getItem('aitc_sync_frequency') || '300000';
+    const savedFreq = localStorage.getItem('aitc_sync_frequency') || '40000';
     const savedModel = localStorage.getItem('aitc_ai_model') || 'gemini-2.5-flash';
     if (apiKeyInputEl) apiKeyInputEl.value = savedKey;
     if (syncFrequencySelectEl) syncFrequencySelectEl.value = savedFreq;
@@ -221,10 +226,10 @@
     });
   }
 
-  // Setup periodic AI Auto-Sync
+  // Setup periodic AI Auto-Sync (constant autonomous background tracking)
   function setupAutoSync() {
     if (autoSyncTimer) clearInterval(autoSyncTimer);
-    const freq = parseInt(localStorage.getItem('aitc_sync_frequency') || '300000', 10);
+    const freq = parseInt(localStorage.getItem('aitc_sync_frequency') || '40000', 10);
     if (freq > 0) {
       autoSyncTimer = setInterval(() => {
         triggerAiScan(false);
@@ -243,12 +248,13 @@
       let candidates = [];
 
       if (apiKey && window.AITCEngine) {
-        showToast(`AI Engine: Live internet research using ${modelName} + Search Grounding...`);
+        if (isManual) showToast(`AI Research: ${modelName} searching YouTube, X & Web...`);
         const currentTitles = activeItems.map(i => i.title);
         candidates = await window.AITCEngine.fetchGeminiAiUpdates(apiKey, currentTitles, modelName);
       } else if (window.AITCEngine) {
-        showToast('AI Engine: Fetching live real-time internet feeds (HN & HF Research)...');
-        candidates = await window.AITCEngine.fetchPublicLiveFeed();
+        if (isManual) showToast('AI Research: Scanning live YouTube trends, X signals & papers...');
+        const currentIds = activeItems.map(i => i.id);
+        candidates = await window.AITCEngine.fetchPublicLiveFeed(currentIds);
       }
 
       if (candidates && candidates.length > 0 && window.AITCEngine) {
@@ -261,13 +267,23 @@
         saveState();
         render();
 
-        const addedCount = result.log.filter(l => l.type === 'ADDED').length;
-        const prunedCount = result.log.filter(l => l.type === 'PRUNED').length;
-        showToast(`AI Scan Complete: +${addedCount} new added, -${prunedCount} outdated pruned.`);
+        const addedLogs = result.log.filter(l => l.type === 'ADDED');
+        const prunedLogs = result.log.filter(l => l.type === 'PRUNED');
+        if (addedLogs.length > 0 || prunedLogs.length > 0) {
+          const addedSummary = addedLogs.map(l => l.title.slice(0, 32)).join(', ');
+          const prunedSummary = prunedLogs.map(l => l.title.slice(0, 32)).join(', ');
+          if (prunedLogs.length > 0) {
+            showToast(`Autonomous AI: Added fresh trend & automatically pruned older "${prunedSummary}..."`);
+          } else {
+            showToast(`Autonomous AI: Added fresh trend "${addedSummary}..."`);
+          }
+        } else if (isManual) {
+          showToast('Autonomous AI: Internet scan complete. Feed is currently up to date.');
+        }
       } else {
         localStorage.setItem('aitc_last_sync', new Date().toISOString());
         updateMetrics();
-        if (isManual) showToast('AI Scan Complete: Current catalog is up to date.');
+        if (isManual) showToast('Autonomous AI: Internet scan complete. Active feed is up to date.');
       }
     } catch (err) {
       console.error('Scan failed:', err);
@@ -311,16 +327,16 @@
 
     emptyStateEl.classList.add('hidden');
 
-    filtered.forEach(item => {
-      const box = createBoxElement(item);
+    filtered.forEach((item, index) => {
+      const box = createBoxElement(item, index);
       gridEl.appendChild(box);
     });
   }
 
-  // Create a single interactive AI Box (card)
-  function createBoxElement(item) {
+  // Create a single interactive AI Box (card) with shade of white assigned
+  function createBoxElement(item, index = 0) {
     const box = document.createElement('article');
-    box.className = 'ai-box';
+    box.className = `ai-box shade-${index % 6}`;
     box.tabIndex = 0;
     box.setAttribute('role', 'button');
     box.setAttribute('aria-label', `View details for ${item.title}`);

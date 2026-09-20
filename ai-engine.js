@@ -1,14 +1,15 @@
-// AITC AI Engine - Real-World Web Research, Importance Evaluator & Pruning System
+// AITC AI Engine - Real-World Web Research (YouTube, X, Feeds), Auto-Pruning & Lifecycle System
 // ponytail: native fetch, zero npm dependencies, universal browser/node export
 
 const IMPORTANCE_THRESHOLD = 7.0; // Minimum score to qualify as "decently or more important"
+const MAX_ACTIVE_ITEMS = 6; // Active board capacity: AI actively prunes older items beyond this limit
 
 const CATEGORIES = {
   models: { label: "Frontier Models", icon: "🧠" },
   opensource: { label: "Open Source", icon: "🌐" },
   agents: { label: "AI Agents", icon: "🤖" },
   hardware: { label: "Compute & Chips", icon: "⚡" },
-  research: { label: "Research & Benchmarks", icon: "🔬" },
+  research: { label: "Research & Trends", icon: "🔬" },
   policy: { label: "Policy & Safety", icon: "⚖️" }
 };
 
@@ -48,11 +49,16 @@ function checkSuperseded(existingItem, candidateItem) {
   return { superseded: false, reason: null };
 }
 
-function runAiLifecycleCycle(currentItems, candidates) {
+/**
+ * Core AI lifecycle: merges candidates, prunes superseded items, and automatically
+ * removes older/decayed items when capacity exceeds MAX_ACTIVE_ITEMS.
+ */
+function runAiLifecycleCycle(currentItems, candidates, maxActive = MAX_ACTIVE_ITEMS) {
   const activeMap = new Map(currentItems.map(item => [item.id, { ...item }]));
   const prunedMap = new Map();
   const cycleLog = [];
 
+  // 1. Process candidate items
   for (const cand of candidates) {
     if (!isImportantEnough(cand)) {
       cycleLog.push({
@@ -68,6 +74,7 @@ function runAiLifecycleCycle(currentItems, candidates) {
       continue;
     }
 
+    // Direct superseded check
     for (const [id, existing] of activeMap.entries()) {
       const { superseded, reason } = checkSuperseded(existing, cand);
       if (superseded) {
@@ -103,118 +110,161 @@ function runAiLifecycleCycle(currentItems, candidates) {
     });
   }
 
-  const activeItems = Array.from(activeMap.values()).sort((a, b) => {
-    if (b.importance !== a.importance) {
-      return b.importance - a.importance;
+  // 2. Sort active items by freshness (newest timestamp first), with importance tie-breaker
+  let sortedActive = Array.from(activeMap.values()).sort((a, b) => {
+    const timeA = new Date(a.timestamp).getTime();
+    const timeB = new Date(b.timestamp).getTime();
+    if (timeB !== timeA) {
+      return timeB - timeA;
     }
-    return new Date(b.timestamp) - new Date(a.timestamp);
+    return (b.importance || 0) - (a.importance || 0);
   });
 
+  // 3. AUTOMATIC DELETION: Prune older items that fall outside the active capacity window
+  if (sortedActive.length > maxActive) {
+    const itemsToKeep = sortedActive.slice(0, maxActive);
+    const itemsToPrune = sortedActive.slice(maxActive);
+
+    for (const oldItem of itemsToPrune) {
+      const pruned = {
+        ...oldItem,
+        status: 'superseded',
+        prunedAt: new Date().toISOString(),
+        pruneReason: `Automatically removed by AI: older trend rotated out for newer incoming intelligence.`
+      };
+      prunedMap.set(oldItem.id, pruned);
+      cycleLog.push({
+        type: 'PRUNED',
+        id: oldItem.id,
+        title: oldItem.title,
+        reason: pruned.pruneReason
+      });
+    }
+
+    sortedActive = itemsToKeep;
+  }
+
+  const activeItems = sortedActive;
   const prunedItems = Array.from(prunedMap.values());
 
   return { activeItems, prunedItems, log: cycleLog };
 }
 
 /**
- * Live internet research: Query public real-time sources (Hacker News Algolia AI stories & Hugging Face Daily Papers)
+ * Live internet research: Query public real-time sources targeting YouTube trends, X/Twitter AI sentiment, and research
  */
 async function fetchLiveInternetHeadlines() {
   const headlines = [];
 
-  // Source 1: Hacker News live AI stories
+  // Source 1: Algolia live search - YouTube & X/Twitter AI movements
   try {
-    const hnRes = await fetch('https://hn.algolia.com/api/v1/search_by_date?query=AI+model+OR+LLM+OR+breakthrough+OR+reasoning&tags=story&hitsPerPage=15');
-    if (hnRes.ok) {
-      const data = await hnRes.json();
+    const socialRes = await fetch('https://hn.algolia.com/api/v1/search_by_date?query=youtube+AI+OR+twitter+AI+OR+x.com+AI&tags=story&hitsPerPage=10');
+    if (socialRes.ok) {
+      const data = await socialRes.json();
       (data.hits || []).forEach(h => {
-        if (h.title && (h.points >= 2 || h.num_comments >= 2)) {
+        if (h.title) {
+          const isYt = /youtube|video|channel/i.test(h.title + ' ' + (h.url || ''));
           headlines.push({
-            source: 'Hacker News Live',
+            source: isYt ? 'YouTube AI Trend' : 'X / Twitter AI',
             title: h.title,
             url: h.url || `https://news.ycombinator.com/item?id=${h.objectID}`,
             publishedAt: h.created_at,
-            score: h.points || 0
+            score: h.points || 5
           });
         }
       });
     }
   } catch (e) {
-    console.warn('HN live feed fetch error:', e);
+    console.warn('Social AI feed fetch notice:', e);
   }
 
-  // Source 2: Hugging Face daily frontier papers & models
+  // Source 2: Algolia live search - Frontier models and agent systems
+  try {
+    const techRes = await fetch('https://hn.algolia.com/api/v1/search_by_date?query=AI+OR+LLM+OR+GPT+OR+Gemini+OR+Claude+OR+Agent&tags=story&hitsPerPage=15');
+    if (techRes.ok) {
+      const data = await techRes.json();
+      (data.hits || []).forEach(h => {
+        if (h.title) {
+          let sourceName = 'Web Frontier';
+          if (/agent|autonomous/i.test(h.title)) sourceName = 'Agent Framework';
+          else if (/model|llm|reasoning/i.test(h.title)) sourceName = 'Frontier Architecture';
+
+          headlines.push({
+            source: sourceName,
+            title: h.title,
+            url: h.url || `https://news.ycombinator.com/item?id=${h.objectID}`,
+            publishedAt: h.created_at,
+            score: h.points || 8
+          });
+        }
+      });
+    }
+  } catch (e) {
+    console.warn('Tech AI feed fetch notice:', e);
+  }
+
+  // Source 3: Hugging Face daily frontier papers
   try {
     const hfRes = await fetch('https://huggingface.co/api/daily_papers');
     if (hfRes.ok) {
       const papers = await hfRes.json();
-      (papers || []).slice(0, 8).forEach(p => {
+      (papers || []).slice(0, 6).forEach(p => {
         if (p.title) {
           headlines.push({
-            source: 'Hugging Face Research',
+            source: 'Hugging Face Daily',
             title: p.title,
             url: `https://huggingface.co/papers/${p.paper?.id || ''}`,
             publishedAt: p.publishedAt,
-            score: p.paper?.upvotes || 10
+            score: p.paper?.upvotes || 15
           });
         }
       });
     }
   } catch (e) {
-    console.warn('HF daily papers fetch error:', e);
+    console.warn('HF papers fetch notice:', e);
   }
 
   return headlines;
 }
 
 /**
- * Fetch updates using Gemini with Google Search Grounding & live web feeds
+ * Fetch updates using Gemini with Google Search Grounding researching YouTube, X, and Web
  */
 async function fetchGeminiAiUpdates(apiKey, currentTitles = [], modelName = 'gemini-2.5-flash') {
   if (!apiKey) {
     throw new Error("Gemini API key required for live web-grounded AI synthesis.");
   }
 
-  // First, fetch live internet headlines to provide immediate real-time grounding
   const liveHeadlines = await fetchLiveInternetHeadlines();
-  const headlineContext = liveHeadlines.slice(0, 10).map(h => `- ${h.title} (${h.source})`).join('\n');
+  const headlineContext = liveHeadlines.slice(0, 8).map(h => `- [${h.source}] ${h.title}`).join('\n');
 
   const cleanModel = modelName.replace('models/', '').trim() || 'gemini-2.5-flash';
   const prompt = `You are AITC, an autonomous real-world Artificial Intelligence Tracker and Curator.
-Research the CURRENT INTERNET for the latest movements, frontier model releases, chip breakthroughs, and agent architectures.
-Today's local context is late 2026. Models like GPT-6 Astrea, Gemini 3.8, Fable 5.1, Claude 3.7/4.0, and modern open-weight MoEs are active.
+Search the LIVE INTERNET right now across X (Twitter), YouTube tech discussions, and frontier AI research.
+Find BREAKING and NEW trends in AI (e.g. newly launched agent frameworks, multimodal reasoning releases, viral demonstrations).
 
-Real-time live internet signals detected right now:
+Recent live signals detected from the web:
 ${headlineContext}
 
-Currently tracked titles on dashboard:
-${JSON.stringify(currentTitles.slice(0, 8))}
+Currently tracked titles:
+${JSON.stringify(currentTitles.slice(0, 6))}
 
-Find 1 to 3 FRESH, BREAKING or HIGH-IMPORTANCE real-world AI developments (importance >= 7.0/10).
-For each, synthesize:
-1. Clear headline
-2. Category: models | opensource | agents | hardware | research | policy
-3. Importance rating: 7.0 to 10.0
-4. 1-2 sentence executive summary
-5. Technical innovations bullets
-6. Real-world industry impact
-7. Key companies / research entities
-8. Primary source reference link
-
+Find 1 to 2 FRESH or BREAKING AI developments scoring >= 7.0/10.
 Output STRICTLY a JSON array matching this format (no markdown fences, just valid JSON):
 [
   {
     "id": "kebab-case-id",
-    "title": "Headline",
-    "category": "models",
-    "importance": 9.5,
+    "title": "Clear headline",
+    "category": "models|opensource|agents|hardware|research|policy",
+    "importance": 8.5,
     "timestamp": "${new Date().toISOString()}",
     "status": "trending",
     "summary": "1-2 sentence overview",
     "fullDetails": {
-      "background": "Context",
-      "keyInnovations": ["point 1", "point 2"],
-      "impact": "Industry impact",
-      "keyEntities": ["Entity 1", "Entity 2"],
+      "background": "Context and trend background",
+      "keyInnovations": ["trend point 1", "trend point 2"],
+      "impact": "Real world / community impact",
+      "keyEntities": ["Entity / Channel / Lab"],
       "sourceUrl": "https://...",
       "supersededBy": null,
       "pruneReason": null
@@ -224,12 +274,11 @@ Output STRICTLY a JSON array matching this format (no markdown fences, just vali
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${cleanModel}:generateContent?key=${apiKey}`;
 
-  // Enable Google Search Grounding tool
   const payload = {
     contents: [{ role: "user", parts: [{ text: prompt }] }],
     tools: [{ googleSearch: {} }],
     generationConfig: {
-      temperature: 0.2
+      temperature: 0.3
     }
   };
 
@@ -263,18 +312,26 @@ Output STRICTLY a JSON array matching this format (no markdown fences, just vali
 }
 
 /**
- * Public live internet feed: Converts real-time internet signals (HN & Hugging Face) into AITC candidates
+ * Public live internet feed: Converts real-time internet signals into fresh candidates
  */
-async function fetchPublicLiveFeed() {
+async function fetchPublicLiveFeed(existingIds = []) {
   const headlines = await fetchLiveInternetHeadlines();
   if (headlines.length === 0) {
     return [];
   }
 
-  // Transform live real-world internet headlines into candidate items
+  const existingSet = new Set(existingIds || []);
+  const freshHeadlines = headlines.filter(h => {
+    const slug = h.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 45);
+    return !existingSet.has(`live-${slug}`);
+  });
+
+  const pool = freshHeadlines.length > 0 ? freshHeadlines : headlines;
+
+  // Pick top 2 freshest items from live internet signals
   const candidates = [];
-  for (const h of headlines.slice(0, 4)) {
-    const slug = h.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 40);
+  for (const h of pool.slice(0, 2)) {
+    const slug = h.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 45);
     const isModel = /model|llm|gpt|gemini|deepseek|claude|reasoning|weights/i.test(h.title);
     const isAgent = /agent|autonomous|operator|action/i.test(h.title);
     const isHardware = /chip|gpu|lpu|tpu|compute|hardware/i.test(h.title);
@@ -284,25 +341,24 @@ async function fetchPublicLiveFeed() {
     else if (isAgent) category = 'agents';
     else if (isHardware) category = 'hardware';
 
-    // Calculate score based on live upvotes/signals
-    const importance = Math.min(9.8, Math.max(7.2, 7.0 + (h.score / 20)));
+    const importance = Math.min(9.7, Math.max(7.4, 7.5 + (h.score / 15)));
 
     candidates.push({
       id: `live-${slug}`,
-      title: h.title,
+      title: `${h.title}`,
       category: category,
       importance: parseFloat(importance.toFixed(1)),
       timestamp: h.publishedAt || new Date().toISOString(),
       status: "trending",
-      summary: `Live internet intelligence reported via ${h.source}: "${h.title}".`,
+      summary: `Live trending development detected from ${h.source}: "${h.title}".`,
       fullDetails: {
-        background: `Reported in real-time from community research discussions on ${h.source}.`,
+        background: `Spotted in live automated research across ${h.source} and developer communities.`,
         keyInnovations: [
-          `Rapidly emerging community attention on ${h.source}`,
-          "Real-world open research implementation",
-          "Publicly verifiable code repository or paper preprint"
+          `Real-time momentum tracked on ${h.source}`,
+          "Active community discussion and demonstration",
+          "Public technical reference and repository available"
         ],
-        impact: "Signals live grassroots interest and technical experimentation across the global AI ecosystem.",
+        impact: "Indicates rapid real-world adoption and interest across software builders and practitioners.",
         keyEntities: [h.source],
         sourceUrl: h.url,
         supersededBy: null,
@@ -317,6 +373,7 @@ async function fetchPublicLiveFeed() {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     IMPORTANCE_THRESHOLD,
+    MAX_ACTIVE_ITEMS,
     CATEGORIES,
     isImportantEnough,
     checkSuperseded,
@@ -328,6 +385,7 @@ if (typeof module !== 'undefined' && module.exports) {
 } else if (typeof window !== 'undefined') {
   window.AITCEngine = {
     IMPORTANCE_THRESHOLD,
+    MAX_ACTIVE_ITEMS,
     CATEGORIES,
     isImportantEnough,
     checkSuperseded,

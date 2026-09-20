@@ -40,6 +40,7 @@
   const saveSettingsBtnEl = document.getElementById('save-settings-btn');
   const restoreSeedBtnEl = document.getElementById('restore-seed-btn');
   const apiKeyInputEl = document.getElementById('gemini-api-key-input');
+  const aiModelInputEl = document.getElementById('ai-model-input');
   const syncFrequencySelectEl = document.getElementById('sync-frequency-select');
   const toastEl = document.getElementById('toast');
 
@@ -56,30 +57,43 @@
   function loadSettings() {
     const savedKey = localStorage.getItem('aitc_gemini_api_key') || '';
     const savedFreq = localStorage.getItem('aitc_sync_frequency') || '300000';
+    const savedModel = localStorage.getItem('aitc_ai_model') || 'gemini-2.5-flash';
     if (apiKeyInputEl) apiKeyInputEl.value = savedKey;
     if (syncFrequencySelectEl) syncFrequencySelectEl.value = savedFreq;
+    if (aiModelInputEl) aiModelInputEl.value = savedModel;
   }
 
   // Load Initial Data (from LocalStorage or seed-data.json)
   async function loadInitialData() {
-    const cachedActive = localStorage.getItem('aitc_active_items');
-    const cachedPruned = localStorage.getItem('aitc_pruned_items');
-
-    if (cachedActive) {
-      try {
-        activeItems = JSON.parse(cachedActive);
-        prunedItems = cachedPruned ? JSON.parse(cachedPruned) : [];
-        updateMetrics();
-        return;
-      } catch (e) {
-        console.warn('Corrupted local cache, resetting to seed data.', e);
-      }
-    }
-
     try {
       const response = await fetch('seed-data.json');
       const seedData = await response.json();
-      // Separate active and superseded from seed
+      
+      const cachedActive = localStorage.getItem('aitc_active_items');
+      const cachedPruned = localStorage.getItem('aitc_pruned_items');
+
+      if (cachedActive) {
+        try {
+          const parsed = JSON.parse(cachedActive);
+          // Check if seed has newer models (e.g. gpt-6-astrea or gemini-3-8) not in cache
+          const cachedIds = new Set(parsed.map(p => p.id));
+          const missingSeed = seedData.filter(s => s.status !== 'superseded' && !cachedIds.has(s.id));
+          
+          if (missingSeed.length > 0) {
+            activeItems = [...missingSeed, ...parsed];
+          } else {
+            activeItems = parsed;
+          }
+          
+          prunedItems = cachedPruned ? JSON.parse(cachedPruned) : seedData.filter(i => i.status === 'superseded');
+          saveState();
+          updateMetrics();
+          return;
+        } catch (e) {
+          console.warn('Cache error, reloading seed data', e);
+        }
+      }
+
       activeItems = seedData.filter(i => i.status !== 'superseded');
       prunedItems = seedData.filter(i => i.status === 'superseded');
       saveState();
@@ -178,8 +192,10 @@
     saveSettingsBtnEl.addEventListener('click', () => {
       const key = apiKeyInputEl.value.trim();
       const freq = syncFrequencySelectEl.value;
+      const model = (aiModelInputEl ? aiModelInputEl.value.trim() : '') || 'gemini-2.5-flash';
       localStorage.setItem('aitc_gemini_api_key', key);
       localStorage.setItem('aitc_sync_frequency', freq);
+      localStorage.setItem('aitc_ai_model', model);
       settingsDialogEl.close();
       setupAutoSync();
       showToast('Settings saved successfully!');
@@ -219,18 +235,19 @@
   // AI Scan and Prune Runner
   async function triggerAiScan(isManual = false) {
     scanNowBtnEl.disabled = true;
-    scanNowBtnEl.querySelector('.btn-label').innerText = 'AI Scanning...';
+    scanNowBtnEl.querySelector('.btn-label').innerText = 'Researching Web...';
 
     try {
       const apiKey = localStorage.getItem('aitc_gemini_api_key');
+      const modelName = localStorage.getItem('aitc_ai_model') || 'gemini-2.5-flash';
       let candidates = [];
 
       if (apiKey && window.AITCEngine) {
-        showToast('AI Engine: Querying real-world AI developments...');
+        showToast(`AI Engine: Live internet research using ${modelName} + Search Grounding...`);
         const currentTitles = activeItems.map(i => i.title);
-        candidates = await window.AITCEngine.fetchGeminiAiUpdates(apiKey, currentTitles);
+        candidates = await window.AITCEngine.fetchGeminiAiUpdates(apiKey, currentTitles, modelName);
       } else if (window.AITCEngine) {
-        showToast('AI Engine: Checking live real-world candidate pool...');
+        showToast('AI Engine: Fetching live real-time internet feeds (HN & HF Research)...');
         candidates = await window.AITCEngine.fetchPublicLiveFeed();
       }
 

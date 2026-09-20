@@ -195,8 +195,19 @@
         </div>
 
         <div class="setting-item">
+          <label for="ai-model-select"><strong>AI Research Model</strong></label>
+          <p class="setting-desc">The model used for real-time web research and importance scoring.</p>
+          <input type="text" id="ai-model-input" placeholder="gemini-2.5-flash or gemini-3.8" value="gemini-2.5-flash" class="input-text">
+        </div>
+
+        <div class="setting-item">
+          <label><strong>Real-Time Web Grounding</strong></label>
+          <p class="setting-desc">✓ Google Search Grounding &amp; Live Internet Feeds (Hacker News Algolia &amp; Hugging Face Daily Research) are active.</p>
+        </div>
+
+        <div class="setting-item">
           <label for="sync-frequency-select"><strong>Auto-Evaluation Frequency</strong></label>
-          <p class="setting-desc">How often the engine runs an autonomous evaluation cycle in the background.</p>
+          <p class="setting-desc">How often the engine autonomously scans the live web in the background.</p>
           <select id="sync-frequency-select" class="select-dropdown">
             <option value="0">Manual Only</option>
             <option value="300000" selected>Every 5 Minutes</option>

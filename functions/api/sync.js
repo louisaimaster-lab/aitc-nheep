@@ -5,7 +5,6 @@ export async function onRequest(context) {
   const { request, env } = context;
   const apiKey = env.GEMINI_API_KEY;
 
-  // Handle CORS preflight
   if (request.method === 'OPTIONS') {
     return new Response(null, {
       status: 204,
@@ -26,6 +25,7 @@ export async function onRequest(context) {
     try {
       const body = await request.json().catch(() => ({}));
       const activeKey = apiKey || body.clientKey;
+      const modelName = body.modelName || 'gemini-2.5-flash';
 
       if (!activeKey) {
         return new Response(
@@ -34,10 +34,25 @@ export async function onRequest(context) {
         );
       }
 
+      // Live internet context query
+      let liveContext = '';
+      try {
+        const hnRes = await fetch('https://hn.algolia.com/api/v1/search_by_date?query=AI+model+OR+LLM+OR+breakthrough&tags=story&hitsPerPage=10');
+        if (hnRes.ok) {
+          const hnData = await hnRes.json();
+          liveContext = (hnData.hits || []).map(h => `- ${h.title} (${h.url || 'HN'})`).join('\n');
+        }
+      } catch (e) {
+        // Continue with search grounding
+      }
+
       const prompt = `You are AITC, an autonomous real-world Artificial Intelligence Tracker and Curator.
-Track the latest real-world movements, breakthroughs, models, chips, and agent frameworks in AI.
-Return a JSON array of 1 to 4 FRESH or BREAKING real-world AI events that are decently or highly important (importance >= 7.0).
-Schema:
+Research the CURRENT INTERNET for the latest movements, frontier model releases (like GPT-6 Astrea, Gemini 3.8, Fable 5.1), chip breakthroughs, and agent architectures.
+Live internet feed signals right now:
+${liveContext}
+
+Return a JSON array of 1 to 3 FRESH or BREAKING real-world AI events that are decently or highly important (importance >= 7.0).
+Strictly output a JSON array of objects:
 [
   {
     "id": "slug",
@@ -60,15 +75,15 @@ Schema:
 ]`;
 
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${activeKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${activeKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            tools: [{ googleSearch: {} }],
             generationConfig: {
-              temperature: 0.3,
-              responseMimeType: 'application/json'
+              temperature: 0.2
             }
           })
         }
@@ -83,8 +98,9 @@ Schema:
       }
 
       const data = await response.json();
-      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      const parsed = JSON.parse(rawText.replace(/```json/g, '').replace(/```/g, '').trim());
+      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
+      const jsonMatch = rawText.match(/\[[\s\S]*\]/);
+      const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(rawText.replace(/```json/g, '').replace(/```/g, '').trim());
 
       return new Response(
         JSON.stringify({ success: true, candidates: parsed }),
@@ -98,11 +114,11 @@ Schema:
     }
   }
 
-  // GET: Healthcheck
   return new Response(
     JSON.stringify({
       status: 'online',
       platform: 'Cloudflare Pages',
+      searchGrounding: 'enabled',
       geminiConfigured: Boolean(apiKey),
       timestamp: new Date().toISOString()
     }),

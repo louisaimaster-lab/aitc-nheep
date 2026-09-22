@@ -8,3 +8,6 @@ crons = ["*/10 * * * *"]
 [[kv_namespaces]]
 binding = "AITC_STORAGE"
 id = "d03c8d02dd62495cb02c3ebf924e4461"
+
+[ai]
+binding = "AI"

@@ -259,6 +259,18 @@ export default {
       return new Response(JSON.stringify(result), { status: 200, headers: corsHeaders });
     }
 
+    if (url.pathname === "/test-ai") {
+      try {
+        const testRes = await env.AI.run("@cf/meta/llama-3.1-70b-instruct", {
+          messages: [{ role: "user", content: "Say hello and return JSON: {\"status\": \"ok\"}" }],
+          max_tokens: 100
+        });
+        return new Response(JSON.stringify(testRes), { status: 200, headers: corsHeaders });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message, stack: err.stack }), { status: 500, headers: corsHeaders });
+      }
+    }
+
     const currentData = await getFeedData(env);
     return new Response(JSON.stringify({
       agent: "AITC 24/7 Autonomous AI Research Engine",
@@ -341,67 +353,111 @@ async function runAutonomousResearchCycle(env) {
 
   // 2. Fetch live internet headlines
   const headlines = await fetchLiveSignals();
-  const existingIds = new Set(activeItems.map(i => i.id));
-  const freshHeadlines = headlines.filter(h => {
-    const slug = h.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 45);
-    return !existingIds.has(`live-${slug}`);
-  });
-
-  const pool = freshHeadlines.length > 0 ? freshHeadlines : headlines;
-
-  // 3. Generate candidate items from live research
-  const candidates = [];
-  for (const h of pool.slice(0, 2)) {
-    const slug = h.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 45);
-    const isUnconventional = /neuromorphic|spiking|snn|photonic|optical computing|wetware|organoid|neuro-symbolic|symbolic logic|lean 4|hyperdimensional|vector symbolic|vsa|biocomputing|cellular automata/i.test(h.title);
-    const isTool = /devsplainers|tool|coding agent|cursor|aider|cline|vllm|ollama|mem0|letta|vibe coding|sandbox|docker|micro-sandbox/i.test(h.title);
-    const isModel = /model|llm|gpt|gemini|deepseek|claude|reasoning|weights/i.test(h.title);
-    const isAgent = /agent|autonomous|operator|action/i.test(h.title);
-    const isHardware = /chip|gpu|lpu|tpu|compute|hardware/i.test(h.title);
-
-    let category = "research";
-    if (isUnconventional) category = "unconventional";
-    else if (isTool) category = "tools";
-    else if (isModel) category = "models";
-    else if (isAgent) category = "agents";
-    else if (isHardware) category = "hardware";
-
-    const score = Math.min(9.7, Math.max(7.4, 7.5 + (h.score / 15)));
-
-    candidates.push({
-      id: `live-${slug}`,
-      title: h.title,
-      category: category,
-      importance: parseFloat(score.toFixed(1)),
-      timestamp: h.publishedAt || new Date().toISOString(),
-      status: "trending",
-      summary: `Live trending intelligence detected from ${h.source}: "${h.title}".`,
-      fullDetails: {
-        background: `Spotted in live automated research across ${h.source} and developer communities.`,
-        keyInnovations: [
-          `Real-time momentum tracked on ${h.source}`,
-          "Active community discussion and demonstration",
-          "Public technical reference and repository available"
-        ],
-        impact: "Indicates rapid real-world adoption and interest across software builders and practitioners.",
-        keyEntities: [h.source],
-        sourceUrl: h.url,
-        supersededBy: null,
-        pruneReason: null
-      }
-    });
-  }
-
-  // 4. Ingest and Auto-Prune
+  
+  // 3. Autonomously ask Workers AI LLM to analyze live signals, generate new intelligence cards, and prune obsolete ones
   let addedCount = 0;
   let prunedCount = 0;
 
-  for (const cand of candidates) {
-    if (cand.importance < IMPORTANCE_THRESHOLD) continue;
-    if (activeItems.some(a => a.id === cand.id)) continue;
+  const aiCuratorResult = await generateAiIntelligenceWithWorkersAI(env, headlines, activeItems);
 
-    activeItems.unshift(cand);
-    addedCount++;
+  if (aiCuratorResult && Array.isArray(aiCuratorResult.newItems) && aiCuratorResult.newItems.length > 0) {
+    console.log(`Workers AI autonomously created ${aiCuratorResult.newItems.length} new boxes`);
+
+    // Process AI-directed removals first
+    if (Array.isArray(aiCuratorResult.removeDecisions)) {
+      for (const dec of aiCuratorResult.removeDecisions) {
+        const idx = activeItems.findIndex(a => a.id === dec.id);
+        if (idx !== -1) {
+          const [removed] = activeItems.splice(idx, 1);
+          prunedItems.unshift({
+            ...removed,
+            status: "superseded",
+            prunedAt: new Date().toISOString(),
+            pruneReason: `AI Model Decision: ${dec.reason || "Superseded by newer live intelligence"}`
+          });
+          prunedCount++;
+          console.log(`Workers AI autonomously removed box: ${removed.title}`);
+        }
+      }
+    }
+
+    // Ingest AI-generated new boxes
+    for (const newItem of aiCuratorResult.newItems) {
+      if (!newItem.title || activeItems.some(a => a.id === newItem.id)) continue;
+      const card = {
+        id: newItem.id || `ai-${Date.now()}`,
+        title: newItem.title,
+        category: newItem.category || "research",
+        importance: typeof newItem.importance === "number" ? Math.min(10, Math.max(7, newItem.importance)) : 8.8,
+        timestamp: new Date().toISOString(),
+        status: "trending",
+        summary: newItem.summary,
+        fullDetails: {
+          background: newItem.fullDetails?.background || "Synthesized autonomously from live internet research.",
+          keyInnovations: newItem.fullDetails?.keyInnovations || ["Breakthrough identified in live research"],
+          impact: newItem.fullDetails?.impact || "Significant real-world impact.",
+          keyEntities: newItem.fullDetails?.keyEntities || ["AI Research Ecosystem"],
+          sourceUrl: newItem.fullDetails?.sourceUrl || "https://news.ycombinator.com",
+          curatedBy: "Cloudflare Workers AI (@cf/meta/llama-3.1-8b-instruct)"
+        }
+      };
+      activeItems.unshift(card);
+      addedCount++;
+    }
+  } else {
+    // Fallback: rule-based candidate ingestion if AI response was unavailable
+    console.log("Using fallback ingestion pipeline");
+    const existingIds = new Set(activeItems.map(i => i.id));
+    const freshHeadlines = headlines.filter(h => {
+      const slug = h.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 45);
+      return !existingIds.has(`live-${slug}`);
+    });
+
+    const pool = freshHeadlines.length > 0 ? freshHeadlines : headlines;
+    for (const h of pool.slice(0, 1)) {
+      const slug = h.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 45);
+      const isUnconventional = /neuromorphic|spiking|snn|photonic|optical computing|wetware|organoid|neuro-symbolic|symbolic logic|lean 4|hyperdimensional|vector symbolic|vsa|biocomputing|cellular automata/i.test(h.title);
+      const isTool = /devsplainers|tool|coding agent|cursor|aider|cline|vllm|ollama|mem0|letta|vibe coding|sandbox|docker|micro-sandbox/i.test(h.title);
+      const isModel = /model|llm|gpt|gemini|deepseek|claude|reasoning|weights/i.test(h.title);
+      const isAgent = /agent|autonomous|operator|action/i.test(h.title);
+      const isHardware = /chip|gpu|lpu|tpu|compute|hardware/i.test(h.title);
+
+      let category = "research";
+      if (isUnconventional) category = "unconventional";
+      else if (isTool) category = "tools";
+      else if (isModel) category = "models";
+      else if (isAgent) category = "agents";
+      else if (isHardware) category = "hardware";
+
+      const score = Math.min(9.7, Math.max(7.4, 7.5 + (h.score / 15)));
+
+      const cand = {
+        id: `live-${slug}`,
+        title: h.title,
+        category: category,
+        importance: parseFloat(score.toFixed(1)),
+        timestamp: h.publishedAt || new Date().toISOString(),
+        status: "trending",
+        summary: `Live trending intelligence detected from ${h.source}: "${h.title}".`,
+        fullDetails: {
+          background: `Spotted in live automated research across ${h.source} and developer communities.`,
+          keyInnovations: [
+            `Real-time momentum tracked on ${h.source}`,
+            "Active community discussion and demonstration",
+            "Public technical reference and repository available"
+          ],
+          impact: "Indicates rapid real-world adoption and interest across software builders and practitioners.",
+          keyEntities: [h.source],
+          sourceUrl: h.url,
+          curatedBy: "AITC Live Heuristic Engine"
+        }
+      };
+
+      if (!activeItems.some(a => a.id === cand.id)) {
+        activeItems.unshift(cand);
+        addedCount++;
+      }
+    }
   }
 
   // Sort by freshness (newest timestamp first)
@@ -443,6 +499,73 @@ async function runAutonomousResearchCycle(env) {
     activeCount: activeItems.length,
     prunedCountTotal: prunedItems.length
   };
+}
+
+async function generateAiIntelligenceWithWorkersAI(env, liveHeadlines, currentActive) {
+  if (!env.AI) {
+    console.warn("env.AI not available");
+    return null;
+  }
+
+  try {
+    const prompt = `You are AITC, an autonomous real-world Artificial Intelligence Tracker and Curator.
+Your job is to read real-time news headlines detected on the live internet, select 1 to 2 genuinely important breakthroughs, write an executive intelligence card for each, and decide which existing active cards to REMOVE (prune) because they are outdated or superseded.
+
+Live incoming signals detected from the internet (past 24 hours):
+${JSON.stringify(liveHeadlines.slice(0, 10).map(h => ({ title: h.title, source: h.source, url: h.url, score: h.score })), null, 2)}
+
+Currently active cards on the board:
+${JSON.stringify(currentActive.map(i => ({ id: i.id, title: i.title, category: i.category, importance: i.importance })), null, 2)}
+
+TASK:
+1. Create 1 to 2 new high-quality intelligence items based on the live signals (or major 2026 AI breakthroughs: Devsplainers tools, unconventional computing like photonic/wetware/neuromorphic, or frontier models).
+2. For each new item, write a full title, category (models|opensource|agents|tools|unconventional|hardware|research|policy), importance (7.0 - 10.0), a 1-2 sentence summary, detailed background, 3 key innovations, real-world impact, key entities, and verified sourceUrl.
+3. Compare against the currently active cards and choose which existing card(s) should be REMOVED (superseded or obsolete).
+
+Respond ONLY with a valid JSON object in this exact schema (no explanation, no markdown fences):
+{
+  "newItems": [
+    {
+      "id": "kebab-case-unique-slug",
+      "title": "Concise Headline",
+      "category": "unconventional",
+      "importance": 9.2,
+      "summary": "1-2 sentence overview of what happened.",
+      "fullDetails": {
+        "background": "Deep technical context.",
+        "keyInnovations": ["Innovation 1", "Innovation 2", "Innovation 3"],
+        "impact": "Real-world engineering impact.",
+        "keyEntities": ["Entity 1", "Entity 2"],
+        "sourceUrl": "https://..."
+      }
+    }
+  ],
+  "removeDecisions": [
+    {
+      "id": "existing-id-to-remove",
+      "reason": "Clear explanation of why this was superseded or pruned."
+    }
+  ]
+}`;
+
+    const res = await env.AI.run("@cf/meta/llama-3.1-70b-instruct", {
+      messages: [
+        { role: "system", content: "You are an autonomous AI research curator. Always reply with raw valid JSON only." },
+        { role: "user", content: prompt }
+      ],
+      max_tokens: 2048,
+      temperature: 0.2
+    });
+
+    const text = (res.response || "").trim();
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]);
+    }
+  } catch (err) {
+    console.error("Workers AI generation error:", err);
+  }
+  return null;
 }
 
 async function fetchLiveSignals() {
